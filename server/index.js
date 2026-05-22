@@ -401,7 +401,11 @@ app.post("/api/employees/:id/reviews", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Sell Something API running on http://localhost:${PORT}`);
-  console.log(`   Supabase: ${process.env.SUPABASE_URL}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`✅ Sell Something API running on http://localhost:${PORT}`);
+    console.log(`   Supabase: ${process.env.SUPABASE_URL}`);
+  });
+}
+
+module.exports = app;
