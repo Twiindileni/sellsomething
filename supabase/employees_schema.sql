@@ -42,6 +42,7 @@ create table if not exists public.reviews (
   reviewer_name text not null,
   rating        int not null check (rating >= 1 and rating <= 5),
   comment       text not null,
+  relationship  text,
   created_at    timestamptz default now()
 );
 

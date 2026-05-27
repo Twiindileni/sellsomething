@@ -50,4 +50,18 @@ export const createEmployee = (data) => api.post("/employees", data);
 export const getEmployeeReviews = (id) => api.get(`/employees/${id}/reviews`);
 export const createEmployeeReview = (id, data) => api.post(`/employees/${id}/reviews`, data);
 
+// ── Profiles & Messages ────────────────────────────────────────────────────────
+const authHeaders = (token) => ({
+  headers: { Authorization: `Bearer ${token}` },
+});
+
+export const updateProfile = (data, token) => api.put("/profiles", data, authHeaders(token));
+export const sendMessage = (data, token) => api.post("/messages", data, authHeaders(token));
+export const getConversations = (token) => api.get("/messages", authHeaders(token));
+export const getMessageThread = (productId, otherUserId, token) =>
+  api.get("/messages/thread", {
+    ...authHeaders(token),
+    params: { product_id: productId, other_user_id: otherUserId },
+  });
+
 export default api;

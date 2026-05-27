@@ -1,28 +1,66 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useProducts } from "../context/ProductContext";
 import ProductCard from "../components/ProductCard";
+
+const LOCATIONS = [
+  "Windhoek",
+  "Walvis Bay",
+  "Swakopmund",
+  "Oshakati",
+  "Rundu",
+  "Katima Mulilo",
+  "Keetmanshoop",
+  "Lüderitz",
+  "Otjiwarongo",
+  "Grootfontein",
+  "Gobabis",
+  "Rehoboth",
+  "Mariental",
+];
 
 export default function Home() {
   const { products, categories, loading, error, fetchProducts, fetchCategories } = useProducts();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
+  const [showFilters, setShowFilters] = useState(false);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [location, setLocation] = useState("");
+  const [sort, setSort] = useState("newest");
+
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
-  useEffect(() => {
+  const loadProducts = useCallback(() => {
     const params = {};
     if (activeCategory !== "All") params.category = activeCategory;
     if (search.trim()) params.search = search.trim();
+    if (minPrice) params.minPrice = minPrice;
+    if (maxPrice) params.maxPrice = maxPrice;
+    if (location) params.location = location;
+    if (sort) params.sort = sort;
     fetchProducts(params);
-  }, [activeCategory, fetchProducts]); // eslint-disable-line
+  }, [activeCategory, search, minPrice, maxPrice, location, sort, fetchProducts]);
 
-  function handleSearch(e) {
+  useEffect(() => {
+    loadProducts();
+  }, [activeCategory, location, sort]); // eslint-disable-line
+
+  function handleSearchSubmit(e) {
     e.preventDefault();
+    loadProducts();
+  }
+
+  function handleResetFilters() {
+    setMinPrice("");
+    setMaxPrice("");
+    setLocation("");
+    setSort("newest");
+    setSearch("");
     const params = {};
     if (activeCategory !== "All") params.category = activeCategory;
-    if (search.trim()) params.search = search.trim();
     fetchProducts(params);
   }
 
@@ -34,7 +72,7 @@ export default function Home() {
           Buy &amp; sell <em>anything</em><br />in Namibia
         </h1>
         <p className="hero-sub">Post a free ad and reach buyers across the country</p>
-        <form className="search-wrap" onSubmit={handleSearch}>
+        <form className="search-wrap" onSubmit={handleSearchSubmit}>
           <input
             className="search-input"
             type="text"
@@ -44,7 +82,97 @@ export default function Home() {
           />
           <button type="submit" className="search-btn">Search</button>
         </form>
+        <button
+          type="button"
+          className="filters-toggle-btn"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          ⚙️ {showFilters ? "Hide Filters" : "Filter & Sort"}
+        </button>
       </section>
+
+      {/* Advanced Filters Panel */}
+      {showFilters && (
+        <div style={{ maxWidth: "1200px", margin: "1.5rem auto 0", padding: "0 2rem" }}>
+          <form onSubmit={handleSearchSubmit} className="filters-panel">
+            <div className="filter-group">
+              <label htmlFor="location-filter">Location</label>
+              <select
+                id="location-filter"
+                className="form-input"
+                style={{ padding: "0.6rem 1rem", fontSize: "0.95rem" }}
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              >
+                <option value="">All Namibia</option>
+                {LOCATIONS.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {loc}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>Price (N$)</label>
+              <div className="filter-input-row">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  className="form-input"
+                  style={{ padding: "0.6rem 1rem", fontSize: "0.95rem" }}
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  aria-label="Minimum price"
+                />
+                <span style={{ color: "var(--muted)" }}>-</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  className="form-input"
+                  style={{ padding: "0.6rem 1rem", fontSize: "0.95rem" }}
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  aria-label="Maximum price"
+                />
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label htmlFor="sort-filter">Sort By</label>
+              <select
+                id="sort-filter"
+                className="form-input"
+                style={{ padding: "0.6rem 1rem", fontSize: "0.95rem" }}
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="newest">Newest First</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="likes_desc">Popularity (Likes)</option>
+              </select>
+            </div>
+
+            <div className="filter-actions">
+              <button
+                type="button"
+                className="cat-btn"
+                onClick={handleResetFilters}
+              >
+                Reset
+              </button>
+              <button
+                type="submit"
+                className="search-btn"
+                style={{ padding: "0.75rem 1.75rem", fontSize: "0.95rem" }}
+              >
+                Apply Filters
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Category Strip */}
       <div className="categories-section">

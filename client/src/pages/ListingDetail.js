@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { getProduct, updateProduct } from "../services/api";
+import { getProduct, updateProduct, sendMessage, getMessageThread } from "../services/api";
 import { getProductImages } from "../utils/productImages";
 import ListingGallery from "../components/ListingGallery";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
 
 const CATEGORY_ICONS = {
   Electronics: "📱", Vehicles: "🚗", Furniture: "🛋️",
@@ -28,13 +29,27 @@ function timeAgo(dateStr) {
 export default function ListingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [likes, setLikes] = useState(0);
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(() => {
+    try {
+      const saved = localStorage.getItem("favorites");
+      const list = saved ? JSON.parse(saved) : [];
+      return list.includes(id);
+    } catch {
+      return false;
+    }
+  });
+
+  const [sellerId, setSellerId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   const images = useMemo(() => getProductImages(product), [product]);
 
@@ -43,6 +58,44 @@ export default function ListingDetail() {
       setLikes(product.likes || 0);
     }
   }, [product]);
+
+  // Retrieve seller profile ID from their email
+  useEffect(() => {
+    if (product?.seller_email) {
+      supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", product.seller_email)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setSellerId(data.id);
+        });
+    }
+  }, [product]);
+
+  // Poll conversation thread
+  useEffect(() => {
+    if (!showChat || !user || !sellerId) return;
+
+    let active = true;
+
+    const loadThread = async () => {
+      try {
+        const res = await getMessageThread(product.id, sellerId, session?.access_token);
+        if (active) setMessages(res.data);
+      } catch (err) {
+        console.error("Failed to load thread:", err);
+      }
+    };
+
+    loadThread();
+    const interval = setInterval(loadThread, 3000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [showChat, sellerId, product?.id, user, session]);
 
   const handleLike = async (e) => {
     e.preventDefault();
@@ -60,12 +113,51 @@ export default function ListingDetail() {
     setLikes(newLikes);
 
     try {
+      const saved = localStorage.getItem("favorites");
+      let list = saved ? JSON.parse(saved) : [];
+      if (newLiked) {
+        if (!list.includes(product.id)) list.push(product.id);
+      } else {
+        list = list.filter(item => item !== product.id);
+      }
+      localStorage.setItem("favorites", JSON.stringify(list));
+
       await updateProduct(product.id, { likes: newLikes });
     } catch (err) {
       setLiked(!newLiked);
       setLikes(likes);
       console.error("Failed to update likes:", err);
     }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !sellerId || !session?.access_token) return;
+
+    setSending(true);
+    try {
+      const res = await sendMessage({
+        receiver_id: sellerId,
+        product_id: product.id,
+        content: newMessage.trim(),
+      }, session.access_token);
+
+      setMessages(prev => [...prev, res.data]);
+      setNewMessage("");
+    } catch (err) {
+      alert("Failed to send message: " + (err.response?.data?.error || err.message));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleMessageClick = () => {
+    if (!user) {
+      alert("Please log in to message the seller.");
+      navigate("/login");
+      return;
+    }
+    setShowChat(true);
   };
 
   useEffect(() => {
@@ -155,14 +247,94 @@ export default function ListingDetail() {
             </div>
           </div>
 
-          <a
-            href={`mailto:${product.seller_email}?subject=Enquiry: ${product.title}`}
-            className="contact-btn"
-          >
-            📧 Contact Seller
-          </a>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+            <a
+              href={`mailto:${product.seller_email}?subject=Enquiry: ${product.title}`}
+              className="contact-btn"
+              style={{ margin: 0, background: 'var(--white)', border: '1.5px solid var(--accent)', color: 'var(--accent)', boxShadow: 'none' }}
+            >
+              📧 Contact via Email
+            </a>
+            {user?.email !== product.seller_email && (
+              <button
+                type="button"
+                className="contact-btn"
+                style={{ margin: 0 }}
+                onClick={handleMessageClick}
+              >
+                💬 Message Seller (In-App)
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Chat Drawer Overlay */}
+      {showChat && sellerId && (
+        <div className="chat-drawer-overlay" onClick={() => setShowChat(false)}>
+          <div className="chat-drawer" onClick={e => e.stopPropagation()}>
+            <div className="chat-header">
+              <div className="chat-header-title">
+                <span className="chat-header-name">Chat with {product.seller}</span>
+                <a href={`/listing/${product.id}`} className="chat-header-listing" onClick={e => e.preventDefault()}>{product.title}</a>
+              </div>
+              <button 
+                type="button" 
+                className="lightbox-close" 
+                onClick={() => setShowChat(false)}
+                style={{ width: 36, height: 36 }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="chat-messages">
+              {messages.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--muted)', marginTop: '2rem' }}>
+                  💬 Start the conversation by typing a message below.
+                </div>
+              ) : (
+                messages.map(m => {
+                  const isMe = m.sender_id === user?.id;
+                  return (
+                    <div 
+                      key={m.id} 
+                      className={`chat-msg-bubble ${isMe ? 'sent' : 'received'}`}
+                    >
+                      {m.content}
+                      <span className="chat-msg-time">
+                        {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <form onSubmit={handleSendMessage} className="chat-input-bar">
+              <textarea
+                value={newMessage}
+                onChange={e => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                disabled={sending}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(e);
+                  }
+                }}
+              />
+              <button 
+                type="submit" 
+                className="chat-send-btn" 
+                disabled={sending || !newMessage.trim()}
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -108,6 +108,16 @@ export default function Navbar() {
             </div>
           )}
 
+          {user && (
+            <button
+              type="button"
+              className="nav-link nav-desktop-only"
+              onClick={handleLogout}
+            >
+              Log Out
+            </button>
+          )}
+
           <NavLink to="/sell" className="nav-link nav-sell-btn" onClick={closeMenu}>
             + Post Ad
           </NavLink>

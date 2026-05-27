@@ -23,8 +23,10 @@ export default function EmployeeDetail() {
   // Review form state
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [relationship, setRelationship] = useState("Hired them before");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState("");
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -59,11 +61,14 @@ export default function EmployeeDetail() {
         reviewer_name,
         rating,
         comment,
-        reviewer_id: user.id
+        reviewer_id: user.id,
+        relationship
       });
       setReviews([res.data, ...reviews]);
       setComment("");
       setRating(5);
+      setRelationship("Hired them before");
+      setShowReviewForm(false);
       
       setEmployee(prev => ({
         ...prev,
@@ -169,7 +174,14 @@ export default function EmployeeDetail() {
               reviews.map(rev => (
                 <div key={rev.id} className="review-card">
                   <div className="review-header">
-                    <span className="review-author">{rev.reviewer_name}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span className="review-author">{rev.reviewer_name}</span>
+                      {rev.relationship && (
+                        <span className="review-relationship-badge">
+                          {rev.relationship}
+                        </span>
+                      )}
+                    </div>
                     <span className="review-stars">
                       {"★".repeat(rev.rating)}{"☆".repeat(5 - rev.rating)}
                     </span>
@@ -181,37 +193,78 @@ export default function EmployeeDetail() {
           </div>
 
           <div className="review-form-box">
-            <h3 className="review-form-title">Leave a Review</h3>
-            <form onSubmit={handleSubmitReview}>
-              <div className="review-form-group">
-                <label className="review-form-label">Rating</label>
-                <select 
-                  value={rating} 
-                  onChange={e => setRating(Number(e.target.value))} 
-                  className="review-form-input"
-                >
-                  <option value={5}>5 - Excellent</option>
-                  <option value={4}>4 - Good</option>
-                  <option value={3}>3 - Average</option>
-                  <option value={2}>2 - Poor</option>
-                  <option value={1}>1 - Terrible</option>
-                </select>
-              </div>
-              <div className="review-form-group">
-                <label className="review-form-label">Comment</label>
-                <textarea 
-                  value={comment} 
-                  onChange={e => setComment(e.target.value)} 
-                  placeholder="Share your experience working with this professional..."
-                  className="review-form-textarea"
-                  required
-                />
-              </div>
-              {reviewError && <p style={{ color: 'red', fontSize: '0.9rem', marginBottom: '1rem' }}>{reviewError}</p>}
-              <button type="submit" className="review-submit-btn" disabled={submittingReview}>
-                {submittingReview ? "Submitting..." : "Post Review"}
+            {!showReviewForm ? (
+              <button
+                type="button"
+                className="review-submit-btn"
+                onClick={() => {
+                  if (!user) {
+                    alert("Please log in to leave a review.");
+                    navigate("/login");
+                  } else {
+                    setShowReviewForm(true);
+                  }
+                }}
+              >
+                ✍️ Write a Review
               </button>
-            </form>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                  <h3 className="review-form-title" style={{ margin: 0 }}>Leave a Review</h3>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowReviewForm(false)}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <form onSubmit={handleSubmitReview}>
+                  <div className="review-form-group">
+                    <label className="review-form-label">Rating</label>
+                    <select 
+                      value={rating} 
+                      onChange={e => setRating(Number(e.target.value))} 
+                      className="review-form-input"
+                    >
+                      <option value={5}>5 - Excellent</option>
+                      <option value={4}>4 - Good</option>
+                      <option value={3}>3 - Average</option>
+                      <option value={2}>2 - Poor</option>
+                      <option value={1}>1 - Terrible</option>
+                    </select>
+                  </div>
+                  <div className="review-form-group">
+                    <label className="review-form-label">Have you hired them?</label>
+                    <select 
+                      value={relationship} 
+                      onChange={e => setRelationship(e.target.value)} 
+                      className="review-form-input"
+                    >
+                      <option value="Hired them before">Yes, I employed/hired them before</option>
+                      <option value="Received inquiry / quote">No, but we discussed/inquired about services</option>
+                      <option value="Co-worker / Partner">We worked together / co-workers</option>
+                      <option value="Personal reference / Other">Personal reference / Other</option>
+                    </select>
+                  </div>
+                  <div className="review-form-group">
+                    <label className="review-form-label">Comment</label>
+                    <textarea 
+                      value={comment} 
+                      onChange={e => setComment(e.target.value)} 
+                      placeholder="Share your experience working with this professional..."
+                      className="review-form-textarea"
+                      required
+                    />
+                  </div>
+                  {reviewError && <p style={{ color: 'red', fontSize: '0.9rem', marginBottom: '1rem' }}>{reviewError}</p>}
+                  <button type="submit" className="review-submit-btn" disabled={submittingReview}>
+                    {submittingReview ? "Submitting..." : "Post Review"}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>

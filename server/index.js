@@ -162,24 +162,45 @@ app.get("/api/products/mine", async (req, res) => {
   }
 });
 
-// ─── GET all products (search + category filter) ──────────────────────────────
+// ─── GET all products (search + category + advanced filters + sorting) ────────
 app.get("/api/products", async (req, res) => {
-  const { search, category } = req.query;
+  const { search, category, minPrice, maxPrice, location, sort } = req.query;
 
   try {
-    let query = supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let query = supabase.from("products").select("*");
 
     if (category && category !== "All") {
       query = query.eq("category", category);
+    }
+
+    if (location && location !== "") {
+      query = query.eq("location", location);
+    }
+
+    if (minPrice) {
+      query = query.gte("price", parseFloat(minPrice));
+    }
+
+    if (maxPrice) {
+      query = query.lte("price", parseFloat(maxPrice));
     }
 
     if (search) {
       query = query.or(
         `title.ilike.%${search}%,description.ilike.%${search}%,location.ilike.%${search}%`
       );
+    }
+
+    // Apply sorting
+    if (sort === "price_asc") {
+      query = query.order("price", { ascending: true });
+    } else if (sort === "price_desc") {
+      query = query.order("price", { ascending: false });
+    } else if (sort === "likes_desc") {
+      query = query.order("likes", { ascending: false });
+    } else {
+      // Default to newest first
+      query = query.order("created_at", { ascending: false });
     }
 
     const { data, error } = await query;
@@ -381,7 +402,7 @@ app.get("/api/employees/:id/reviews", async (req, res) => {
 });
 
 app.post("/api/employees/:id/reviews", async (req, res) => {
-  const { reviewer_name, rating, comment, reviewer_id } = req.body;
+  const { reviewer_name, rating, comment, reviewer_id, relationship } = req.body;
   if (!reviewer_name || !rating || !comment) {
     return res.status(400).json({ error: "Missing required fields" });
   }
@@ -391,11 +412,161 @@ app.post("/api/employees/:id/reviews", async (req, res) => {
       reviewer_id: reviewer_id || null,
       reviewer_name,
       rating: parseInt(rating, 10),
-      comment
+      comment,
+      relationship: relationship || null
     };
     const { data, error } = await supabase.from("reviews").insert([row]).select().single();
     if (error) throw error;
     res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── PUT update profile ──────────────────────────────────────────────────────
+app.put("/api/profiles", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return res.status(401).json({ error: "Log in to update profile." });
+  }
+  const { full_name, avatar_url } = req.body;
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return res.status(401).json({ error: "Session expired. Please log in again." });
+    }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({ full_name, avatar_url, updated_at: new Date() })
+      .eq("id", user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST send message ───────────────────────────────────────────────────────
+app.post("/api/messages", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return res.status(401).json({ error: "Log in to send messages." });
+  }
+  const { receiver_id, product_id, content } = req.body;
+  if (!receiver_id || !product_id || !content || !content.trim()) {
+    return res.status(400).json({ error: "Missing required message fields" });
+  }
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return res.status(401).json({ error: "Session expired. Please log in again." });
+    }
+
+    const row = {
+      sender_id: user.id,
+      receiver_id,
+      product_id,
+      content: content.trim()
+    };
+
+    const { data, error } = await supabase.from("messages").insert([row]).select().single();
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET messages/conversations list ──────────────────────────────────────────
+app.get("/api/messages", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return res.status(401).json({ error: "Log in to view messages." });
+  }
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return res.status(401).json({ error: "Session expired. Please log in again." });
+    }
+
+    // Fetch all messages involving the current user
+    const { data: messages, error } = await supabase
+      .from("messages")
+      .select("*")
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    if (messages.length === 0) {
+      return res.json([]);
+    }
+
+    // Resolve profile details and product details manually
+    const userIds = Array.from(new Set(messages.flatMap(m => [m.sender_id, m.receiver_id])));
+    const productIds = Array.from(new Set(messages.map(m => m.product_id)));
+
+    const [profilesRes, productsRes] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, email, avatar_url").in("id", userIds),
+      supabase.from("products").select("id, title, price, image").in("id", productIds)
+    ]);
+
+    const profilesMap = (profilesRes.data || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+    const productsMap = (productsRes.data || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+
+    const enrichedMessages = messages.map(m => ({
+      ...m,
+      sender: profilesMap[m.sender_id] || { id: m.sender_id, full_name: "Deleted User" },
+      receiver: profilesMap[m.receiver_id] || { id: m.receiver_id, full_name: "Deleted User" },
+      product: productsMap[m.product_id] || { id: m.product_id, title: "Deleted Listing" }
+    }));
+
+    res.json(enrichedMessages);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET thread between users for specific product ────────────────────────────
+app.get("/api/messages/thread", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return res.status(401).json({ error: "Log in to view conversation threads." });
+  }
+  const { product_id, other_user_id } = req.query;
+  if (!product_id || !other_user_id) {
+    return res.status(400).json({ error: "Missing product_id or other_user_id query param." });
+  }
+
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return res.status(401).json({ error: "Session expired. Please log in again." });
+    }
+
+    const { data: messages, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("product_id", product_id)
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+
+    const filtered = messages.filter(
+      m => (m.sender_id === user.id && m.receiver_id === other_user_id) ||
+           (m.sender_id === other_user_id && m.receiver_id === user.id)
+    );
+
+    res.json(filtered);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

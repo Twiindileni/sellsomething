@@ -50,14 +50,15 @@ export function AuthProvider({ children }) {
   }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
+    // Reset local auth state immediately for instant UI feedback
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+    
     try {
       await supabase.auth.signOut();
     } catch (err) {
       console.error("Supabase signOut error:", err);
-    } finally {
-      setUser(null);
-      setSession(null);
-      setProfile(null);
     }
   }, []);
 
