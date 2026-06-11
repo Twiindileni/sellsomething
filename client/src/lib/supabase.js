@@ -9,10 +9,15 @@ if (!supabaseUrl || !supabaseKey) {
   );
 }
 
-export const supabase = createClient(supabaseUrl || "", supabaseKey || "", {
-  auth: {
-    detectSessionInUrl: true,
-    flowType: "pkce",
-    persistSession: true,
-  },
-});
+// Avoid createClient("") crash when env vars are missing at build/deploy time
+export const supabase = createClient(
+  supabaseUrl || "https://placeholder.supabase.co",
+  supabaseKey || "placeholder-key",
+  {
+    auth: {
+      detectSessionInUrl: true,
+      flowType: "pkce",
+      persistSession: true,
+    },
+  }
+);
