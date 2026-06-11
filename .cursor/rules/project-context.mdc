@@ -1,0 +1,22 @@
+---
+description: SellSomething project context — read AGENTS.md at session start
+alwaysApply: true
+---
+
+# SellSomething — persistent context
+
+**At the start of every conversation**, read `AGENTS.md` in the repo root for full project state, escrow flow, SQL migrations, and env setup.
+
+This is a Namibian marketplace with escrow (React + Express + Supabase). Chat history does not sync between machines — `AGENTS.md` is the handoff document.
+
+## Quick facts
+
+- Buyer UI: `client/src/components/BuyerOrderTracking.js`
+- Seller UI: `client/src/components/SellerOrderTracking.js`
+- Admin: `/admin` + `server/index.js` admin endpoints (needs `admin_orders.sql` or service role key)
+- Order helpers: `client/src/utils/orderHelpers.js`
+- Design tokens in `client/src/App.css` — never hardcode colors
+- Ad fee: N$25; currency: N$ (Namibian Dollars)
+- `is_admin` set manually in Supabase on `profiles` table
+
+When user says they are continuing from another PC, read `AGENTS.md` and `git log -5` before proposing changes.
