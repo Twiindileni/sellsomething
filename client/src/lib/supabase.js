@@ -1,18 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseKey = process.env.REACT_APP_SUPABASE_KEY;
+// Publishable (anon) key — safe to ship in the client; access is enforced by RLS.
+// Env vars override these when set (e.g. for a different Supabase project).
+const FALLBACK_URL = "https://svyivtqdvfigoopwvaly.supabase.co";
+const FALLBACK_KEY = "sb_publishable_hnjN-3hE3wHHkzyUn6xkdw_R2jsFt2U";
 
-if (!supabaseUrl || !supabaseKey) {
-  console.warn(
-    "Missing REACT_APP_SUPABASE_URL or REACT_APP_SUPABASE_KEY. Auth will not work."
-  );
-}
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || FALLBACK_URL;
+const supabaseKey = process.env.REACT_APP_SUPABASE_KEY || FALLBACK_KEY;
 
-// Avoid createClient("") crash when env vars are missing at build/deploy time
 export const supabase = createClient(
-  supabaseUrl || "https://placeholder.supabase.co",
-  supabaseKey || "placeholder-key",
+  supabaseUrl,
+  supabaseKey,
   {
     auth: {
       detectSessionInUrl: true,
