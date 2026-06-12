@@ -54,24 +54,27 @@ function sortEmployeesBoostedFirst(rows) {
 }
 
 async function expireStaleBoosts() {
+  // Needs service role to bypass boosts RLS; without it, expiry happens when
+  // an admin opens the Boosts tab (admin RLS policy allows the updates).
+  const db = supabaseAdmin || supabase;
   const now = new Date().toISOString();
   try {
-    const { data: expiredBoosts } = await supabase
+    const { data: expiredBoosts } = await db
       .from("boosts")
       .select("id, target_type, product_id, employee_id")
       .eq("status", "active")
       .lt("ends_at", now);
 
     for (const boost of expiredBoosts || []) {
-      await supabase.from("boosts").update({ status: "expired" }).eq("id", boost.id);
+      await db.from("boosts").update({ status: "expired" }).eq("id", boost.id);
       if (boost.target_type === "product" && boost.product_id) {
-        await supabase
+        await db
           .from("products")
           .update({ is_boosted: false, boost_ends_at: null })
           .eq("id", boost.product_id);
       }
       if (boost.target_type === "employee" && boost.employee_id) {
-        await supabase
+        await db
           .from("employees")
           .update({ is_boosted: false, boost_ends_at: null })
           .eq("id", boost.employee_id);
@@ -1424,7 +1427,7 @@ app.post("/api/boosts", async (req, res) => {
 
     const targetId = target_type === "product" ? product_id : employee_id;
     const idCol = target_type === "product" ? "product_id" : "employee_id";
-    const { data: existing } = await supabase
+    const { data: existing } = await userClient
       .from("boosts")
       .select("id")
       .eq(idCol, targetId)
@@ -1450,7 +1453,8 @@ app.post("/api/boosts", async (req, res) => {
       payment_reference: payment_reference || null,
     };
 
-    const { data, error } = await supabase.from("boosts").insert([row]).select().single();
+    // Insert as the logged-in user so the boosts RLS policy (auth.uid() = user_id) passes
+    const { data, error } = await userClient.from("boosts").insert([row]).select().single();
     if (error) throw error;
     res.status(201).json(data);
   } catch (err) {
@@ -1469,7 +1473,7 @@ app.get("/api/boosts/mine", async (req, res) => {
       return res.status(401).json({ error: "Session expired." });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await userClient
       .from("boosts")
       .select("*")
       .eq("user_id", user.id)

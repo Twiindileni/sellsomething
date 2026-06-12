@@ -35,3 +35,22 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS boost_ends_at TIMESTAMPTZ;
 
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS is_boosted BOOLEAN DEFAULT FALSE;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS boost_ends_at TIMESTAMPTZ;
+
+-- RLS: users manage their own boost requests; admins manage all
+ALTER TABLE boosts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "boosts_insert_own" ON boosts;
+CREATE POLICY "boosts_insert_own" ON boosts
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "boosts_select_own" ON boosts;
+CREATE POLICY "boosts_select_own" ON boosts
+  FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "boosts_admin_all" ON boosts;
+CREATE POLICY "boosts_admin_all" ON boosts
+  FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE))
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE));
