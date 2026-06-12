@@ -12,9 +12,12 @@ import {
   sendMessage, 
   getMessageThread,
   getMyOrders,
+  getMyBoosts,
 } from "../services/api";
 import ProductCard from "../components/ProductCard";
 import EmployeeCard from "../components/EmployeeCard";
+import BoostModal from "../components/BoostModal";
+import { boostStatusForTarget, formatBoostExpiry } from "../utils/boostHelpers";
 import { isEtaMissed, sellerNeedsAction } from "../utils/orderHelpers";
 import {
   messageThreadKey,
@@ -37,6 +40,9 @@ export default function DashboardPage() {
   const [listings, setListings] = useState([]);
   const [services, setServices] = useState([]);
   const [listingsLoading, setListingsLoading] = useState(true);
+  const [myBoosts, setMyBoosts] = useState([]);
+  const [boostTarget, setBoostTarget] = useState(null);
+  const [boostTargetType, setBoostTargetType] = useState(null);
   
   // Tab 2: Favorites state
   const [favorites, setFavorites] = useState([]);
@@ -90,16 +96,57 @@ export default function DashboardPage() {
     try {
       const [prodRes, empRes] = await Promise.all([
         getMyProducts(user.email),
-        getMyEmployees(user.id)
+        getMyEmployees(user.id),
       ]);
       setListings(prodRes.data || []);
       setServices(empRes.data || []);
+
+      if (accessToken) {
+        try {
+          const boostRes = await getMyBoosts(accessToken);
+          setMyBoosts(boostRes.data || []);
+        } catch {
+          setMyBoosts([]);
+        }
+      }
     } catch (err) {
       setGlobalError("Failed to load listings data.");
     } finally {
       setListingsLoading(false);
     }
-  }, [user]);
+  }, [user, accessToken]);
+
+  function openBoostModal(targetType, target) {
+    setBoostTargetType(targetType);
+    setBoostTarget(target);
+  }
+
+  function renderBoostBar(targetType, target) {
+    const status = boostStatusForTarget(myBoosts, targetType, target.id);
+    if (status.type === "active") {
+      return (
+        <p className="dashboard-boost-status dashboard-boost-status--active">
+          ⭐ Sponsored until {formatBoostExpiry(target.boost_ends_at || status.boost?.ends_at)}
+        </p>
+      );
+    }
+    if (status.type === "pending") {
+      return (
+        <p className="dashboard-boost-status dashboard-boost-status--pending">
+          ⏳ Boost pending admin approval
+        </p>
+      );
+    }
+    return (
+      <button
+        type="button"
+        className="dashboard-boost-btn"
+        onClick={() => openBoostModal(targetType, target)}
+      >
+        ⭐ Boost — pin to top
+      </button>
+    );
+  }
 
   // Load Tab 2: Favorites
   const loadFavorites = useCallback(async () => {
@@ -544,7 +591,10 @@ export default function DashboardPage() {
                 ) : (
                   <div className="directory-grid" style={{ marginTop: 0 }}>
                     {services.map((employee) => (
-                      <EmployeeCard key={employee.id} employee={employee} />
+                      <div key={employee.id} className="dashboard-boost-wrap">
+                        <EmployeeCard employee={employee} />
+                        {renderBoostBar("employee", employee)}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -562,11 +612,13 @@ export default function DashboardPage() {
                 ) : (
                   <div className="products-grid">
                     {listings.map((product) => (
-                      <ProductCard 
-                        key={product.id} 
-                        product={product} 
-                        onDelete={handleDeleteListing} 
-                      />
+                      <div key={product.id} className="dashboard-boost-wrap">
+                        <ProductCard
+                          product={product}
+                          onDelete={handleDeleteListing}
+                        />
+                        {renderBoostBar("product", product)}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -809,6 +861,19 @@ export default function DashboardPage() {
             </form>
           </div>
         </section>
+      )}
+
+      {boostTarget && boostTargetType && (
+        <BoostModal
+          target={boostTarget}
+          targetType={boostTargetType}
+          accessToken={accessToken}
+          onClose={() => {
+            setBoostTarget(null);
+            setBoostTargetType(null);
+          }}
+          onSuccess={loadListings}
+        />
       )}
     </div>
   );

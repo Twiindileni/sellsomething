@@ -14,7 +14,7 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
   const { user, session } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1); // 1=info, 2=payment instructions, 3=confirm
-  const [payMethod, setPayMethod] = useState("easywallet");
+  const [payMethod, setPayMethod] = useState("mobile");
   const [payRef, setPayRef] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -89,7 +89,7 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
                 <span className="buynow-step-num">1</span>
                 <div>
                   <strong>You pay to our secure app account</strong>
-                  <p>Send {formatPrice(product.price)} to the Sell Something EasyWallet or bank account.</p>
+                  <p>Send {formatPrice(product.price)} to our mobile number (Pay to Cell, EasyWallet, or Blue Wallet) or FNB bank account.</p>
                 </div>
               </div>
               <div className="buynow-step-item">
@@ -141,10 +141,10 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
 
             <div className="buynow-payment-tabs">
               <button
-                className={`buynow-pay-tab ${payMethod === "easywallet" ? "active" : ""}`}
-                onClick={() => setPayMethod("easywallet")}
+                className={`buynow-pay-tab ${payMethod === "mobile" ? "active" : ""}`}
+                onClick={() => setPayMethod("mobile")}
               >
-                📱 EasyWallet
+                📱 Mobile Payment
               </button>
               <button
                 className={`buynow-pay-tab ${payMethod === "bank" ? "active" : ""}`}
@@ -154,11 +154,15 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
               </button>
             </div>
 
-            {payMethod === "easywallet" ? (
+            {payMethod === "mobile" ? (
               <div className="buynow-payment-details">
                 <div className="buynow-pay-row">
-                  <span className="buynow-pay-label">EasyWallet Number</span>
-                  <span className="buynow-pay-value highlight">{PAYMENT.easywallet}</span>
+                  <span className="buynow-pay-label">Cell Number</span>
+                  <span className="buynow-pay-value highlight">{PAYMENT.cellNumber}</span>
+                </div>
+                <div className="buynow-pay-row">
+                  <span className="buynow-pay-label">Accepted methods</span>
+                  <span className="buynow-pay-value">{PAYMENT.mobileMethods.join(" · ")}</span>
                 </div>
                 <div className="buynow-pay-row">
                   <span className="buynow-pay-label">Account Name</span>

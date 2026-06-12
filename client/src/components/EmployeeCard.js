@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { isCurrentlyBoosted } from "../utils/boostHelpers";
 
 const PROFESSION_ICONS = {
   Nanny: "👶",
@@ -16,13 +17,20 @@ const PROFESSION_ICONS = {
 export default function EmployeeCard({ employee }) {
   const icon = PROFESSION_ICONS[employee.profession] || "💼";
   const cover = employee.image || (employee.images && employee.images[0]);
+  const sponsored = isCurrentlyBoosted(employee);
 
   return (
-    <Link to={`/professionals/${employee.id}`} className="product-card employee-card">
+    <Link to={`/professionals/${employee.id}`} className={`product-card employee-card${sponsored ? " product-card--sponsored" : ""}`}>
       {cover ? (
-        <img src={cover} alt={employee.name} className="card-img" />
+        <>
+          <img src={cover} alt={employee.name} className="card-img" />
+          {sponsored && <span className="sponsored-badge">Sponsored</span>}
+        </>
       ) : (
-        <div className="card-img-placeholder" style={{ background: "var(--sand)" }}>{icon}</div>
+        <div className="card-img-placeholder" style={{ background: "var(--sand)" }}>
+          {sponsored && <span className="sponsored-badge">Sponsored</span>}
+          {icon}
+        </div>
       )}
       <div className="card-body">
         <div className="card-header-flex">

@@ -13,6 +13,8 @@ const PORT = process.env.PORT || 5000;
 const BUCKET = "product-images";
 const MAX_IMAGES = 4;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const BOOST_FEES = { 7: 50, 14: 90, 30: 150 };
+const BOOST_DURATIONS = Object.keys(BOOST_FEES).map(Number);
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -28,6 +30,56 @@ function imagesFromRow(product) {
   }
   list = list.slice(0, MAX_IMAGES);
   return { ...product, images: list, image: list[0] || null };
+}
+
+function isBoostActive(row) {
+  return !!(row?.is_boosted && row?.boost_ends_at && new Date(row.boost_ends_at) > new Date());
+}
+
+function sortProductsBoostedFirst(rows, secondarySort) {
+  return [...rows].sort((a, b) => {
+    const diff = (isBoostActive(b) ? 1 : 0) - (isBoostActive(a) ? 1 : 0);
+    if (diff !== 0) return diff;
+    if (secondarySort) return secondarySort(a, b);
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  });
+}
+
+function sortEmployeesBoostedFirst(rows) {
+  return [...rows].sort((a, b) => {
+    const diff = (isBoostActive(b) ? 1 : 0) - (isBoostActive(a) ? 1 : 0);
+    if (diff !== 0) return diff;
+    return Number(b.rating || 0) - Number(a.rating || 0);
+  });
+}
+
+async function expireStaleBoosts() {
+  const now = new Date().toISOString();
+  try {
+    const { data: expiredBoosts } = await supabase
+      .from("boosts")
+      .select("id, target_type, product_id, employee_id")
+      .eq("status", "active")
+      .lt("ends_at", now);
+
+    for (const boost of expiredBoosts || []) {
+      await supabase.from("boosts").update({ status: "expired" }).eq("id", boost.id);
+      if (boost.target_type === "product" && boost.product_id) {
+        await supabase
+          .from("products")
+          .update({ is_boosted: false, boost_ends_at: null })
+          .eq("id", boost.product_id);
+      }
+      if (boost.target_type === "employee" && boost.employee_id) {
+        await supabase
+          .from("employees")
+          .update({ is_boosted: false, boost_ends_at: null })
+          .eq("id", boost.employee_id);
+      }
+    }
+  } catch (err) {
+    console.warn("expireStaleBoosts:", err.message);
+  }
 }
 
 async function enrichEmployee(row) {
@@ -303,7 +355,13 @@ app.get("/api/products", async (req, res) => {
 
     const { data, error } = await query;
     if (error) throw error;
-    res.json(data.map(imagesFromRow));
+    await expireStaleBoosts();
+    let secondarySort;
+    if (sort === "price_asc") secondarySort = (a, b) => Number(a.price) - Number(b.price);
+    else if (sort === "price_desc") secondarySort = (a, b) => Number(b.price) - Number(a.price);
+    else if (sort === "likes_desc") secondarySort = (a, b) => Number(b.likes || 0) - Number(a.likes || 0);
+    const sorted = sortProductsBoostedFirst(data || [], secondarySort);
+    res.json(sorted.map(imagesFromRow));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -435,7 +493,8 @@ app.get("/api/employees", async (req, res) => {
     }
     const { data, error } = await query;
     if (error) throw error;
-    const enriched = await Promise.all((data || []).map(enrichEmployee));
+    await expireStaleBoosts();
+    const enriched = await Promise.all(sortEmployeesBoostedFirst(data || []).map(enrichEmployee));
     res.json(enriched);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1297,6 +1356,221 @@ app.get("/api/admin/users/:id", async (req, res) => {
       conversations,
       messagesAvailable: auth.hasServiceRole,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── BOOSTS (sponsored ads) ───────────────────────────────────────────────────
+
+app.post("/api/boosts", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ error: "Log in to request a boost." });
+
+  const {
+    target_type,
+    product_id,
+    employee_id,
+    target_title,
+    duration_days,
+    amount,
+    payment_method,
+    payment_reference,
+  } = req.body;
+
+  if (!["product", "employee"].includes(target_type)) {
+    return res.status(400).json({ error: "Invalid boost target type." });
+  }
+  const days = parseInt(duration_days, 10);
+  if (!BOOST_DURATIONS.includes(days)) {
+    return res.status(400).json({ error: "Invalid boost duration." });
+  }
+  if (Number(amount) !== BOOST_FEES[days]) {
+    return res.status(400).json({ error: "Boost fee does not match selected plan." });
+  }
+
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return res.status(401).json({ error: "Session expired. Please log in again." });
+    }
+
+    if (target_type === "product") {
+      if (!product_id) return res.status(400).json({ error: "product_id is required." });
+      const { data: product } = await supabase
+        .from("products")
+        .select("id, seller_id, seller_email, title")
+        .eq("id", product_id)
+        .maybeSingle();
+      if (!product) return res.status(404).json({ error: "Listing not found." });
+      const owns =
+        product.seller_id === user.id
+        || (product.seller_email || "").toLowerCase() === (user.email || "").toLowerCase();
+      if (!owns) return res.status(403).json({ error: "You can only boost your own listings." });
+    } else {
+      if (!employee_id) return res.status(400).json({ error: "employee_id is required." });
+      const { data: employee } = await supabase
+        .from("employees")
+        .select("id, user_id, contact_email, name")
+        .eq("id", employee_id)
+        .maybeSingle();
+      if (!employee) return res.status(404).json({ error: "Service profile not found." });
+      const owns =
+        employee.user_id === user.id
+        || (employee.contact_email || "").toLowerCase() === (user.email || "").toLowerCase();
+      if (!owns) return res.status(403).json({ error: "You can only boost your own services." });
+    }
+
+    const targetId = target_type === "product" ? product_id : employee_id;
+    const idCol = target_type === "product" ? "product_id" : "employee_id";
+    const { data: existing } = await supabase
+      .from("boosts")
+      .select("id")
+      .eq(idCol, targetId)
+      .eq("status", "pending_payment")
+      .maybeSingle();
+    if (existing) {
+      return res.status(400).json({
+        error: "You already have a boost awaiting admin approval for this item.",
+      });
+    }
+
+    const row = {
+      id: uuidv4(),
+      target_type,
+      product_id: target_type === "product" ? product_id : null,
+      employee_id: target_type === "employee" ? employee_id : null,
+      user_id: user.id,
+      target_title: target_title || "Boost request",
+      amount: BOOST_FEES[days],
+      duration_days: days,
+      status: "pending_payment",
+      payment_method: payment_method || "mobile",
+      payment_reference: payment_reference || null,
+    };
+
+    const { data, error } = await supabase.from("boosts").insert([row]).select().single();
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/boosts/mine", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ error: "Login required." });
+
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return res.status(401).json({ error: "Session expired." });
+    }
+
+    const { data, error } = await supabase
+      .from("boosts")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (error) {
+      if (/relation.*boosts|does not exist/i.test(error.message)) {
+        return res.json([]);
+      }
+      throw error;
+    }
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/boosts/admin", async (req, res) => {
+  try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+    await expireStaleBoosts();
+    const { data, error } = await auth.db
+      .from("boosts")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/boosts/:id/admin-status", async (req, res) => {
+  const { status, duration_days } = req.body;
+  if (!["active", "rejected"].includes(status)) {
+    return res.status(400).json({ error: "Invalid boost status." });
+  }
+
+  try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+
+    const { data: boost, error: boostErr } = await auth.db
+      .from("boosts")
+      .select("*")
+      .eq("id", req.params.id)
+      .single();
+    if (boostErr || !boost) return res.status(404).json({ error: "Boost not found." });
+    if (boost.status !== "pending_payment") {
+      return res.status(400).json({ error: "Only pending boost requests can be updated." });
+    }
+
+    const { data: { user: adminUser } } = await auth.userClient.auth.getUser();
+
+    if (status === "rejected") {
+      const { data, error } = await auth.db
+        .from("boosts")
+        .update({
+          status: "rejected",
+          approved_by: adminUser?.id || null,
+          approved_at: new Date().toISOString(),
+        })
+        .eq("id", boost.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return res.json(data);
+    }
+
+    const days = parseInt(duration_days, 10) || boost.duration_days;
+    if (!BOOST_DURATIONS.includes(days)) {
+      return res.status(400).json({ error: "Invalid duration for activation." });
+    }
+
+    const startsAt = new Date();
+    const endsAt = new Date(startsAt.getTime() + days * 24 * 60 * 60 * 1000);
+
+    const { data, error } = await auth.db
+      .from("boosts")
+      .update({
+        status: "active",
+        duration_days: days,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        approved_by: adminUser?.id || null,
+        approved_at: startsAt.toISOString(),
+      })
+      .eq("id", boost.id)
+      .select()
+      .single();
+    if (error) throw error;
+
+    const parentUpdate = { is_boosted: true, boost_ends_at: endsAt.toISOString() };
+    if (boost.target_type === "product" && boost.product_id) {
+      await auth.db.from("products").update(parentUpdate).eq("id", boost.product_id);
+    }
+    if (boost.target_type === "employee" && boost.employee_id) {
+      await auth.db.from("employees").update(parentUpdate).eq("id", boost.employee_id);
+    }
+
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

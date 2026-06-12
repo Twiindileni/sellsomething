@@ -85,6 +85,10 @@ export default function Navbar() {
             Find Services
           </NavLink>
 
+          <NavLink to="/help" className="nav-link" onClick={closeMenu}>
+            Help
+          </NavLink>
+
           {!user && (
             <NavLink to="/login" className="nav-link nav-login-btn" onClick={closeMenu}>
               Log In / Sign Up

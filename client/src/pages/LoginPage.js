@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,6 +16,13 @@ export default function LoginPage() {
   useEffect(() => {
     if (!authLoading && user) navigate("/dashboard", { replace: true });
   }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccess(location.state.message);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -82,7 +90,12 @@ export default function LoginPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+              <label className="form-label" htmlFor="password" style={{ margin: 0 }}>Password</label>
+              <Link to="/forgot-password" style={{ fontSize: "0.85rem", color: "var(--accent)", fontWeight: "600", textDecoration: "none" }}>
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"

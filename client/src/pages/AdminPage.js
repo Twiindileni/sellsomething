@@ -6,7 +6,10 @@ import {
   adminUpdateOrderStatus,
   getAdminUsers,
   getAdminUserDetail,
+  getAdminBoosts,
+  adminUpdateBoostStatus,
 } from "../services/api";
+import { BOOST_PLANS } from "../config/site";
 import { isEtaMissed, formatEta } from "../utils/orderHelpers";
 
 const STATUS_LABELS = {
@@ -93,7 +96,7 @@ export default function AdminPage() {
   const { user, session, profile, loading: authLoading, profileLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [view, setView] = useState("orders"); // "orders" | "users"
+  const [view, setView] = useState("orders"); // "orders" | "users" | "boosts"
 
   // Orders view state
   const [orders, setOrders] = useState([]);
@@ -114,6 +117,12 @@ export default function AdminPage() {
   const [userDetail, setUserDetail] = useState(null);
   const [userDetailLoading, setUserDetailLoading] = useState(false);
   const [openThreads, setOpenThreads] = useState({});
+
+  // Boosts view state
+  const [boosts, setBoosts] = useState([]);
+  const [boostsLoading, setBoostsLoading] = useState(false);
+  const [boostsError, setBoostsError] = useState(null);
+  const [boostDurations, setBoostDurations] = useState({});
 
   const isAdmin = profile?.is_admin === true;
   const authReady = !authLoading && !profileLoading;
@@ -179,11 +188,36 @@ export default function AdminPage() {
     }
   }, [authReady, isAdmin, accessToken, loadOrders]);
 
+  const loadBoosts = useCallback(async () => {
+    if (!accessToken) return;
+    setBoostsLoading(true);
+    setBoostsError(null);
+    try {
+      const res = await getAdminBoosts(accessToken);
+      const list = Array.isArray(res.data) ? res.data : [];
+      setBoosts(list);
+      const durations = {};
+      list.forEach((b) => { durations[b.id] = b.duration_days; });
+      setBoostDurations(durations);
+    } catch (err) {
+      setBoostsError(err.response?.data?.error || err.message || "Failed to load boosts.");
+      setBoosts([]);
+    } finally {
+      setBoostsLoading(false);
+    }
+  }, [accessToken]);
+
   useEffect(() => {
     if (view === "users" && authReady && isAdmin && accessToken && users.length === 0) {
       loadUsers();
     }
   }, [view, authReady, isAdmin, accessToken, users.length, loadUsers]);
+
+  useEffect(() => {
+    if (view === "boosts" && authReady && isAdmin && accessToken) {
+      loadBoosts();
+    }
+  }, [view, authReady, isAdmin, accessToken, loadBoosts]);
 
   useEffect(() => {
     if (selectedUserId) loadUserDetail(selectedUserId);
@@ -193,6 +227,22 @@ export default function AdminPage() {
   useEffect(() => {
     setVisibleCount(20);
   }, [filterStatus, search, sortBy]);
+
+  async function handleBoostAction(boostId, status) {
+    setActionLoading((prev) => ({ ...prev, [boostId]: true }));
+    try {
+      await adminUpdateBoostStatus(
+        boostId,
+        { status, duration_days: boostDurations[boostId] },
+        accessToken
+      );
+      await loadBoosts();
+    } catch (err) {
+      alert("Boost action failed: " + (err.response?.data?.error || err.message));
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [boostId]: false }));
+    }
+  }
 
   async function handleAction(orderId, newStatus) {
     setActionLoading((prev) => ({ ...prev, [orderId]: true }));
@@ -363,12 +413,13 @@ export default function AdminPage() {
           className="admin-refresh-btn"
           onClick={() => {
             if (view === "orders") loadOrders();
+            else if (view === "boosts") loadBoosts();
             else if (selectedUserId) loadUserDetail(selectedUserId);
             else loadUsers();
           }}
-          disabled={loadingOrders || usersLoading || userDetailLoading}
+          disabled={loadingOrders || usersLoading || userDetailLoading || boostsLoading}
         >
-          {loadingOrders || usersLoading || userDetailLoading ? "Loading…" : "Refresh"}
+          {loadingOrders || usersLoading || userDetailLoading || boostsLoading ? "Loading…" : "Refresh"}
         </button>
       </div>
 
@@ -388,6 +439,18 @@ export default function AdminPage() {
           onClick={() => { setView("users"); setSelectedUserId(null); setUserDetail(null); }}
         >
           👥 Users
+        </button>
+        <button
+          type="button"
+          className={`admin-filter-tab ${view === "boosts" ? "active" : ""}`}
+          onClick={() => setView("boosts")}
+        >
+          ⭐ Boosts
+          {boosts.filter((b) => b.status === "pending_payment").length > 0 && (
+            <span className="dashboard-tab-badge">
+              {boosts.filter((b) => b.status === "pending_payment").length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -509,6 +572,108 @@ export default function AdminPage() {
                   )}
                 </section>
               )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* ════════ BOOSTS VIEW ════════ */}
+      {view === "boosts" && (
+        <>
+          {boostsError && <div className="error-banner">{boostsError}</div>}
+          {boostsLoading ? (
+            <div className="loading-wrap"><div className="spinner" /> Loading boost requests…</div>
+          ) : (
+            <>
+              {boosts.filter((b) => b.status === "pending_payment").length > 0 && (
+                <section className="admin-orders-section">
+                  <h3 className="admin-orders-section-title attention">
+                    ⚠️ Awaiting approval ({boosts.filter((b) => b.status === "pending_payment").length})
+                  </h3>
+                  <div className="admin-orders-list">
+                    {boosts
+                      .filter((b) => b.status === "pending_payment")
+                      .map((boost) => (
+                        <div key={boost.id} className="admin-boost-card">
+                          <div className="admin-boost-main">
+                            <strong>{boost.target_title}</strong>
+                            <span className="admin-boost-meta">
+                              {boost.target_type === "product" ? "Listing" : "Service"} ·{" "}
+                              {formatPrice(boost.amount)} · requested {boost.duration_days} days
+                            </span>
+                            {boost.payment_reference && (
+                              <span className="admin-boost-ref">Ref: {boost.payment_reference}</span>
+                            )}
+                            <span className="admin-boost-meta">{formatDateTime(boost.created_at)}</span>
+                          </div>
+                          <div className="admin-boost-actions">
+                            <label className="admin-boost-duration-label">
+                              Active for
+                              <select
+                                className="admin-boost-duration-select"
+                                value={boostDurations[boost.id] || boost.duration_days}
+                                onChange={(e) =>
+                                  setBoostDurations((prev) => ({
+                                    ...prev,
+                                    [boost.id]: parseInt(e.target.value, 10),
+                                  }))
+                                }
+                              >
+                                {BOOST_PLANS.map((p) => (
+                                  <option key={p.days} value={p.days}>{p.label}</option>
+                                ))}
+                              </select>
+                            </label>
+                            <button
+                              type="button"
+                              className="admin-action-btn success"
+                              disabled={actionLoading[boost.id]}
+                              onClick={() => handleBoostAction(boost.id, "active")}
+                            >
+                              {actionLoading[boost.id] ? "…" : "Activate Sponsored"}
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-action-btn danger"
+                              disabled={actionLoading[boost.id]}
+                              onClick={() => handleBoostAction(boost.id, "rejected")}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </section>
+              )}
+
+              <section className="admin-orders-section">
+                <h3 className="admin-orders-section-title">All boost history</h3>
+                {boosts.length === 0 ? (
+                  <div className="dashboard-empty"><p>No boost requests yet.</p></div>
+                ) : (
+                  <div className="admin-orders-list">
+                    {boosts.map((boost) => (
+                      <div key={boost.id} className="admin-boost-card admin-boost-card--compact">
+                        <div className="admin-boost-main">
+                          <strong>{boost.target_title}</strong>
+                          <span className="admin-boost-meta">
+                            {boost.target_type} · {formatPrice(boost.amount)} · {boost.duration_days}d
+                            {boost.ends_at ? ` · ends ${formatDate(boost.ends_at)}` : ""}
+                          </span>
+                        </div>
+                        <span className={`admin-boost-status admin-boost-status--${boost.status}`}>
+                          {boost.status === "pending_payment" && "Pending"}
+                          {boost.status === "active" && "Active"}
+                          {boost.status === "expired" && "Expired"}
+                          {boost.status === "rejected" && "Rejected"}
+                          {boost.status === "cancelled" && "Cancelled"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
             </>
           )}
         </>

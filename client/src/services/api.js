@@ -103,4 +103,17 @@ export const getAdminUsers = (token) => api.get("/admin/users", authHeaders(toke
 export const getAdminUserDetail = (userId, token) =>
   api.get(`/admin/users/${userId}`, authHeaders(token));
 
+// ── Boosts (sponsored ads) ────────────────────────────────────────────────────
+export const createBoost = (data, token) =>
+  api.post("/boosts", data, authHeaders(token));
+
+export const getMyBoosts = (token) =>
+  api.get("/boosts/mine", authHeaders(token));
+
+export const getAdminBoosts = (token) =>
+  api.get("/boosts/admin", authHeaders(token));
+
+export const adminUpdateBoostStatus = (boostId, data, token) =>
+  api.put(`/boosts/${boostId}/admin-status`, data, authHeaders(token));
+
 export default api;

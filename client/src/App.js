@@ -10,10 +10,18 @@ import SellPage from "./pages/SellPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import AuthCallback from "./pages/AuthCallback";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import DashboardPage from "./pages/DashboardPage";
 import EmployeeDirectory from "./pages/EmployeeDirectory";
 import EmployeeDetail from "./pages/EmployeeDetail";
 import AdminPage from "./pages/AdminPage";
+import HelpSupportPage from "./pages/HelpSupportPage";
+import AboutPage from "./pages/AboutPage";
+import HowItWorksPage from "./pages/HowItWorksPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import Footer from "./components/Footer";
 import "./App.css";
 
 export default function App() {
@@ -37,6 +45,8 @@ export default function App() {
                 />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/professionals" element={<EmployeeDirectory />} />
                 <Route path="/professionals/:id" element={<EmployeeDetail />} />
@@ -60,8 +70,14 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/help" element={<HelpSupportPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/how-it-works" element={<HowItWorksPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
               </Routes>
             </main>
+            <Footer />
           </div>
         </Router>
       </ProductProvider>

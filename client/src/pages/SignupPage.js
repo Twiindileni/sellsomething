@@ -43,6 +43,7 @@ export default function SignupPage() {
         email: email.trim(),
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: { full_name: name.trim(), terms_accepted: true, terms_accepted_at: new Date().toISOString() },
         },
       });
@@ -53,7 +54,7 @@ export default function SignupPage() {
         // Redirect happens in useEffect once AuthContext receives the session
       } else {
         setSuccess(
-          "Account created! Check your email to confirm your address, then log in."
+          "Account created! Check your email and click Confirm my email — you'll be signed in and taken to the site."
         );
       }
     } catch (err) {

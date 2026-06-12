@@ -49,6 +49,7 @@ Run in order if not already done:
 3. `supabase/delivery_eta_migration.sql` — `delivery_eta`, `delivery_eta_note`
 4. `supabase/order_tracking_migration.sql` — timestamps + `buyer_rating`, `buyer_review`
 5. `supabase/seller_updates_migration.sql` — `seller_latest_update`, `seller_latest_update_at`
+6. `supabase/boost_migration.sql` — sponsored boosts table + `is_boosted` on products/employees
 
 Set admin:
 ```sql
@@ -62,10 +63,10 @@ UPDATE profiles SET is_admin = TRUE WHERE email = 'your-admin@email.com';
 REACT_APP_SUPABASE_URL=
 REACT_APP_SUPABASE_KEY=
 REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_PAYMENT_EASYWALLET=+264 81 78 545 73
-REACT_APP_PAYMENT_BANK_NAME=Sell Something (Pty) Ltd
-REACT_APP_PAYMENT_BANK=Bank Windhoek
-REACT_APP_PAYMENT_BANK_ACCOUNT=
+REACT_APP_PAYMENT_CELL=+264 81 78 545 73
+REACT_APP_PAYMENT_BANK_NAME=Sheka Investment CC
+REACT_APP_PAYMENT_BANK=FNB
+REACT_APP_PAYMENT_BANK_ACCOUNT=62262406674
 ```
 
 **server/.env**

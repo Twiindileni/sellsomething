@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getProductImages } from "../utils/productImages";
 import { updateProduct } from "../services/api";
+import { isCurrentlyBoosted } from "../utils/boostHelpers";
 
 const CATEGORY_ICONS = {
   Electronics: "📱",
@@ -82,17 +83,23 @@ export default function ProductCard({ product, onDelete }) {
     }
   };
 
+  const sponsored = isCurrentlyBoosted(product);
+
   return (
-    <Link to={`/listing/${product.id}`} className="product-card">
+    <Link to={`/listing/${product.id}`} className={`product-card${sponsored ? " product-card--sponsored" : ""}`}>
       {cover ? (
         <>
           <img src={cover} alt={product.title} className="card-img" />
+          {sponsored && <span className="sponsored-badge">Sponsored</span>}
           {images.length > 1 && (
             <span className="card-photo-count">{images.length} photos</span>
           )}
         </>
       ) : (
-        <div className="card-img-placeholder">{icon}</div>
+        <div className="card-img-placeholder">
+          {sponsored && <span className="sponsored-badge">Sponsored</span>}
+          {icon}
+        </div>
       )}
       <div className="card-body">
         <div className="card-header-flex">

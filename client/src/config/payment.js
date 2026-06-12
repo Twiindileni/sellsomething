@@ -1,7 +1,15 @@
 // Payment details for escrow purchases — set via .env (see client/.env.example)
+const cellNumber =
+  process.env.REACT_APP_PAYMENT_CELL
+  || process.env.REACT_APP_PAYMENT_EASYWALLET
+  || "+264 81 78 545 73";
+
 export const PAYMENT = {
-  easywallet: process.env.REACT_APP_PAYMENT_EASYWALLET || "+264 81 78 545 73",
-  bankName: process.env.REACT_APP_PAYMENT_BANK_NAME || "Sell Something (Pty) Ltd",
-  bank: process.env.REACT_APP_PAYMENT_BANK || "Bank Windhoek",
-  bankAccount: process.env.REACT_APP_PAYMENT_BANK_ACCOUNT || "",
+  cellNumber,
+  /** @deprecated use cellNumber */
+  easywallet: cellNumber,
+  mobileMethods: ["Pay to Cell", "EasyWallet", "Blue Wallet"],
+  bankName: process.env.REACT_APP_PAYMENT_BANK_NAME || "Sheka Investment CC",
+  bank: process.env.REACT_APP_PAYMENT_BANK || "FNB",
+  bankAccount: process.env.REACT_APP_PAYMENT_BANK_ACCOUNT || "62262406674",
 };
