@@ -7,6 +7,7 @@ const cors = require("cors");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 const { createClient } = require("@supabase/supabase-js");
+const { sendPushToUser, firePush } = require("./push");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -676,6 +677,116 @@ app.put("/api/profiles", async (req, res) => {
   }
 });
 
+// ─── PUSH NOTIFICATIONS ───────────────────────────────────────────────────────
+
+app.post("/api/push/register", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ error: "Login required." });
+
+  const { push_token, platform, device_label } = req.body;
+  if (!push_token?.trim()) {
+    return res.status(400).json({ error: "Push token is required." });
+  }
+  if (!["android", "ios", "web"].includes(platform)) {
+    return res.status(400).json({ error: "Invalid platform." });
+  }
+
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) return res.status(401).json({ error: "Session expired." });
+
+    const row = {
+      user_id: user.id,
+      token: push_token.trim(),
+      platform,
+      device_label: device_label?.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await userClient
+      .from("push_tokens")
+      .upsert(row, { onConflict: "user_id,token" })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET my registered push tokens (debug)
+app.get("/api/push/register", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ error: "Login required." });
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) return res.status(401).json({ error: "Session expired." });
+    const db = supabaseAdmin || userClient;
+    const { data, error } = await db.from("push_tokens").select("id, platform, device_label, created_at, updated_at").eq("user_id", user.id);
+    if (error) throw error;
+    res.json({ user_id: user.id, tokens: data || [], firebase_ready: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/push/register", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ error: "Login required." });
+
+  const { push_token } = req.body;
+  if (!push_token?.trim()) {
+    return res.status(400).json({ error: "Push token is required." });
+  }
+
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) return res.status(401).json({ error: "Session expired." });
+
+    const { error } = await userClient
+      .from("push_tokens")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("token", push_token.trim());
+
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+async function notifyNewMessage(senderId, receiverId, preview) {
+  const db = supabaseAdmin || supabase;
+  const { data: sender } = await db
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", senderId)
+    .maybeSingle();
+  const name = sender?.full_name || sender?.email?.split("@")[0] || "Someone";
+  firePush(sendPushToUser(db, receiverId, {
+    title: `💬 New message from ${name}`,
+    body: preview.slice(0, 120),
+    url: "/dashboard",
+    type: "message",
+  }));
+}
+
+async function notifyOrderUpdate(order, { title, body, targetUserId, url }) {
+  if (!targetUserId) return;
+  firePush(sendPushToUser(supabase, targetUserId, {
+    title,
+    body,
+    url: url || "/dashboard",
+    type: "order",
+  }));
+}
+
 // ─── POST send message ───────────────────────────────────────────────────────
 app.post("/api/messages", async (req, res) => {
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
@@ -727,6 +838,7 @@ app.post("/api/messages", async (req, res) => {
 
     const { data, error } = await userClient.from("messages").insert([row]).select().single();
     if (error) throw error;
+    notifyNewMessage(user.id, receiver_id, content.trim());
     res.status(201).json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1026,6 +1138,11 @@ app.put("/api/orders/:id/status", async (req, res) => {
         .select()
         .single();
       if (error) throw error;
+      notifyOrderUpdate(data, {
+        title: "Delivery update",
+        body: sellerNote.slice(0, 140),
+        targetUserId: data.buyer_id,
+      });
       return res.json(data);
     }
 
@@ -1055,6 +1172,11 @@ app.put("/api/orders/:id/status", async (req, res) => {
         .select()
         .single();
       if (error) throw error;
+      notifyOrderUpdate(data, {
+        title: "📦 Delivery date updated",
+        body: `Seller updated the ETA for ${data.product_title || "your order"}`,
+        targetUserId: data.buyer_id,
+      });
       return res.json(data);
     }
 
@@ -1149,6 +1271,34 @@ app.put("/api/orders/:id/status", async (req, res) => {
       .select()
       .single();
     if (error) throw error;
+
+    const productLabel = data.product_title || "your order";
+    if (status === "in_delivery") {
+      notifyOrderUpdate(data, {
+        title: "Order shipped",
+        body: `Seller started delivery for ${productLabel}`,
+        targetUserId: data.buyer_id,
+      });
+    } else if (status === "delivered") {
+      notifyOrderUpdate(data, {
+        title: "Order delivered",
+        body: `Confirm receipt for ${productLabel}`,
+        targetUserId: data.buyer_id,
+      });
+    } else if (status === "confirmed") {
+      notifyOrderUpdate(data, {
+        title: "Buyer confirmed order",
+        body: `${productLabel} — payout pending admin release`,
+        targetUserId: data.seller_id,
+      });
+    } else if (status === "disputed") {
+      notifyOrderUpdate(data, {
+        title: "Refund requested",
+        body: `Buyer disputed ${productLabel}`,
+        targetUserId: data.seller_id,
+      });
+    }
+
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1207,6 +1357,31 @@ app.put("/api/orders/:id/admin-status", async (req, res) => {
     }
 
     const data = await adminUpdateOrder(auth, req.params.id, status);
+
+    if (status === "payment_received") {
+      const { data: fullOrder } = await auth.db
+        .from("orders")
+        .select("product_title, seller_id")
+        .eq("id", req.params.id)
+        .maybeSingle();
+      notifyOrderUpdate(fullOrder || {}, {
+        title: "Payment confirmed",
+        body: `Start delivery for ${fullOrder?.product_title || "your sale"}`,
+        targetUserId: fullOrder?.seller_id,
+      });
+    } else if (status === "refunded") {
+      const { data: fullOrder } = await auth.db
+        .from("orders")
+        .select("product_title, buyer_id")
+        .eq("id", req.params.id)
+        .maybeSingle();
+      notifyOrderUpdate(fullOrder || {}, {
+        title: "Refund processed",
+        body: `Your refund for ${fullOrder?.product_title || "an order"} was approved`,
+        targetUserId: fullOrder?.buyer_id,
+      });
+    }
+
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });

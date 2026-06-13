@@ -34,6 +34,7 @@ struct WebView: UIViewRepresentable {
             parent.isLoading = false
             updateNavigationStates(webView)
             webView.scrollView.refreshControl?.endRefreshing()
+            PushNotificationManager.shared.injectTokenScript(into: webView)
         }
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -91,6 +92,15 @@ struct WebView: UIViewRepresentable {
             for: .valueChanged
         )
         webView.scrollView.refreshControl = refreshControl
+
+        NotificationCenter.default.addObserver(
+            forName: .sellSomethingPushTokenUpdated,
+            object: nil,
+            queue: .main
+        ) { [weak webView] _ in
+            guard let webView else { return }
+            PushNotificationManager.shared.injectTokenScript(into: webView)
+        }
         
         // Make scrolling bounce feel native
         webView.scrollView.bounces = true

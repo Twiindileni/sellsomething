@@ -11,8 +11,16 @@ WebView wrapper around **https://www.sellsomething.online** (same approach as th
 - Hardware back button navigates web history
 - Offline screen with retry
 - `mailto:` / `tel:` / WhatsApp links open the right apps
+- **Google sign-in** opens in Chrome Custom Tabs (Google blocks login inside WebView)
 - Brand colors (orange `#D4500A`, charcoal status bar)
 - Deep links: tapping a `sellsomething.online` link can open in the app
+- **Push notifications** (messages & orders) via Firebase — see `docs/PUSH_NOTIFICATIONS.md`
+
+## Firebase / push notifications
+
+`app/google-services.json` is required (from Firebase Console). The Android **applicationId** must match the Firebase app package name: `www.sellsomething.online`.
+
+After adding the file, rebuild the app and allow notifications when prompted.
 
 ## Requirements
 
@@ -34,11 +42,10 @@ WebView wrapper around **https://www.sellsomething.online** (same approach as th
 
 ## Play Store notes
 
-- Package id: `online.sellsomething.app`
+- Package id: `www.sellsomething.online` (matches Firebase / Play Store signing)
 - The app label is **Sell Something**
-- For Google login inside the app, make sure the OAuth flow works in WebView;
-  if Google blocks it ("disallowed_useragent"), users can still log in with
-  email/password, or we can switch auth to Chrome Custom Tabs later.
+- Google login uses **Chrome Custom Tabs** — after signing in, you return to the app automatically.
+- Email/password login works inside the app as usual.
 
 ## Changing the website URL
 

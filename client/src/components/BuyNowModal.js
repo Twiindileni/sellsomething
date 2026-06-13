@@ -145,6 +145,23 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
               </p>
             </div>
 
+            <div className="buynow-ship-box">
+              <label className="buynow-ref-label" htmlFor="ship-to">
+                Where should the seller deliver? <span className="buynow-required">*</span>
+              </label>
+              <input
+                id="ship-to"
+                type="text"
+                className="form-input"
+                placeholder="e.g. Windhoek, Klein Windhoek, 12 Independence Ave"
+                value={shippingLocation}
+                onChange={(e) => setShippingLocation(e.target.value)}
+                required
+                autoComplete="street-address"
+              />
+              <p className="buynow-ship-hint">Town, suburb, and street address so the seller knows where to send the item.</p>
+            </div>
+
             <div className="buynow-payment-tabs">
               <button
                 className={`buynow-pay-tab ${payMethod === "mobile" ? "active" : ""}`}
@@ -208,34 +225,18 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
               </div>
             )}
 
-            <div className="buynow-ref-row">
-              <div className="buynow-ref-group">
-                <label className="buynow-ref-label" htmlFor="pay-ref">
-                  Payment Reference (optional)
-                </label>
-                <input
-                  id="pay-ref"
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. John Shilongo - iPhone 13"
-                  value={payRef}
-                  onChange={(e) => setPayRef(e.target.value)}
-                />
-              </div>
-              <div className="buynow-ref-group">
-                <label className="buynow-ref-label" htmlFor="ship-to">
-                  Delivery Location <span className="buynow-required">*</span>
-                </label>
-                <input
-                  id="ship-to"
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Windhoek, Klein Windhoek, 12 Independence Ave"
-                  value={shippingLocation}
-                  onChange={(e) => setShippingLocation(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="buynow-ref-group">
+              <label className="buynow-ref-label" htmlFor="pay-ref">
+                Payment Reference (optional)
+              </label>
+              <input
+                id="pay-ref"
+                type="text"
+                className="form-input"
+                placeholder="e.g. John Shilongo - iPhone 13"
+                value={payRef}
+                onChange={(e) => setPayRef(e.target.value)}
+              />
             </div>
 
             {error && <div className="error-banner" style={{ marginBottom: "1rem" }}>⚠️ {error}</div>}

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
+import { schedulePushRegistration, clearPushRegistration } from "../services/pushNotifications";
 
 const AuthContext = createContext();
 
@@ -65,6 +66,12 @@ export function AuthProvider({ children }) {
     fetchProfile(userId);
   }, [user?.id, fetchProfile]);
 
+  useEffect(() => {
+    if (user?.id && session?.access_token) {
+      schedulePushRegistration(session.access_token);
+    }
+  }, [user?.id, session?.access_token]);
+
   const refreshProfile = useCallback(async () => {
     if (user?.id) {
       profileUserIdRef.current = null;
@@ -74,6 +81,7 @@ export function AuthProvider({ children }) {
   }, [user?.id, fetchProfile]);
 
   const signOut = useCallback(async () => {
+    const token = session?.access_token;
     profileUserIdRef.current = null;
     setUser(null);
     setSession(null);
@@ -81,11 +89,12 @@ export function AuthProvider({ children }) {
     setProfileLoading(false);
 
     try {
+      if (token) await clearPushRegistration(token);
       await supabase.auth.signOut();
     } catch (err) {
       console.error("Supabase signOut error:", err);
     }
-  }, []);
+  }, [session?.access_token]);
 
   return (
     <AuthContext.Provider

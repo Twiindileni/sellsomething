@@ -2622,6 +2622,8 @@ body {
   justify-content: center;
   padding: 1rem;
   animation: fadeIn 0.2s ease;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .buynow-modal {
   background: var(--white);
@@ -2630,11 +2632,26 @@ body {
   width: 100%;
   max-height: 92vh;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 2.5rem 2rem;
   box-shadow: 0 24px 80px rgba(28, 24, 20, 0.3);
   border: 1px solid var(--border-light);
   position: relative;
   scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.buynow-ship-box {
+  background: rgba(212, 80, 10, 0.07);
+  border: 2px solid rgba(212, 80, 10, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+.buynow-ship-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.45;
 }
 .buynow-close {
   position: absolute;
@@ -3090,6 +3107,23 @@ body {
   font-weight: 600;
   color: var(--ink);
   line-height: 1.35;
+}
+.tracking-label-row--ship {
+  background: rgba(212, 80, 10, 0.08);
+  border: 1px solid rgba(212, 80, 10, 0.25);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.tracking-label-val--address {
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+.tracking-ship-missing {
+  margin: -0.35rem 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--accent);
+  line-height: 1.4;
 }
 .tracking-panel {
   background: var(--white);
@@ -4232,7 +4266,15 @@ body {
 @media (max-width: 600px) {
   .admin-stats { grid-template-columns: repeat(2, 1fr); }
   .admin-stat-card.escrow-total { grid-column: span 2; }
-  .buynow-modal { padding: 2rem 1.25rem; }
+  .buynow-overlay {
+    align-items: flex-start;
+    padding: 0.5rem;
+  }
+  .buynow-modal {
+    padding: 2rem 1.25rem 2.5rem;
+    max-height: none;
+    margin: 0 auto 1.5rem;
+  }
   .terms-modal-footer { flex-direction: column; }
   .order-card-top { flex-direction: column; }
   .admin-order-top { flex-direction: column; }

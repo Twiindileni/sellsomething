@@ -3,12 +3,18 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Apply Firebase when google-services.json is present (download from Firebase Console)
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+}
+
 android {
     namespace 'online.sellsomething.app'
     compileSdk 34
 
     defaultConfig {
-        applicationId "online.sellsomething.app"
+        // Must match package_name in google-services.json (Firebase Android app)
+        applicationId "www.sellsomething.online"
         minSdk 26
         targetSdk 34
         versionCode 1
@@ -38,5 +44,9 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.webkit:webkit:1.11.0'
+    implementation 'androidx.browser:browser:1.8.0'
     implementation 'com.google.android.material:material:1.12.0'
+
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-messaging-ktx'
 }

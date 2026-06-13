@@ -153,18 +153,19 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
             <div className="tracking-barcode-lines" aria-hidden="true" />
             <span className="tracking-label-id">{order.id?.slice(0, 8).toUpperCase()}</span>
           </div>
-          <div className="tracking-label-row">
-            <span className="tracking-label-key">SHIP TO</span>
-            <span className="tracking-label-val">
-              {order.shipping_location || order.buyer_email || "—"}
+          <div className="tracking-label-row tracking-label-row--ship">
+            <span className="tracking-label-key">DELIVER TO</span>
+            <span className="tracking-label-val tracking-label-val--address">
+              {order.shipping_location || "—"}
             </span>
           </div>
-          {order.shipping_location && order.buyer_email && (
-            <div className="tracking-label-row">
-              <span className="tracking-label-key">BUYER</span>
-              <span className="tracking-label-val">{order.buyer_email}</span>
-            </div>
+          {!order.shipping_location && !isFinished && (
+            <p className="tracking-ship-missing">Buyer did not leave a delivery address on this order.</p>
           )}
+          <div className="tracking-label-row">
+            <span className="tracking-label-key">BUYER</span>
+            <span className="tracking-label-val">{order.buyer_email || "—"}</span>
+          </div>
           <div className="tracking-label-row">
             <span className="tracking-label-key">ITEM</span>
             <span className="tracking-label-val">{order.product_title}</span>

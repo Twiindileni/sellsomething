@@ -1,9 +1,12 @@
 package online.sellsomething.app
 
 import android.annotation.SuppressLint
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.ValueCallback
@@ -18,17 +21,19 @@ import android.widget.ProgressBar
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
         const val SITE_URL = "https://www.sellsomething.online"
+        const val EXTRA_OPEN_URL = "open_url"
         private val INTERNAL_HOSTS = setOf(
             "www.sellsomething.online",
             "sellsomething.online",
+            // Supabase REST only — OAuth URLs open in Chrome Custom Tabs
             "svyivtqdvfigoopwvaly.supabase.co",
-            "accounts.google.com",
         )
     }
 
@@ -46,6 +51,11 @@ class MainActivity : AppCompatActivity() {
             filePathCallback = null
         }
 
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) PushTokenFetcher.fetch { injectPushTokenIntoWebView() }
+        }
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,9 +67,11 @@ class MainActivity : AppCompatActivity() {
         offlineView = findViewById(R.id.offlineView)
         val retryButton: Button = findViewById(R.id.retryButton)
 
+        webView.addJavascriptInterface(PushBridge(), "SellSomethingPush")
+
         with(webView.settings) {
             javaScriptEnabled = true
-            domStorageEnabled = true          // required for Supabase auth session
+            domStorageEnabled = true
             databaseEnabled = true
             loadsImagesAutomatically = true
             mediaPlaybackRequiresUserGesture = true
@@ -74,26 +86,14 @@ class MainActivity : AppCompatActivity() {
                 request: WebResourceRequest,
             ): Boolean {
                 val url = request.url
-                val scheme = url.scheme ?: return false
-
-                // mailto:, tel:, whatsapp:, intent: → hand off to other apps
-                if (scheme != "http" && scheme != "https") {
-                    openExternal(url)
-                    return true
-                }
-
-                // Keep our site + auth flows inside the app, everything else in browser
-                return if (url.host in INTERNAL_HOSTS) {
-                    false
-                } else {
-                    openExternal(url)
-                    true
-                }
+                return handleNavigation(url)
             }
 
             override fun onPageFinished(view: WebView, url: String) {
                 swipeRefresh.isRefreshing = false
                 progressBar.visibility = View.GONE
+                injectPushTokenIntoWebView()
+                injectNativeFlags()
             }
 
             override fun onReceivedError(
@@ -101,7 +101,6 @@ class MainActivity : AppCompatActivity() {
                 request: WebResourceRequest,
                 error: WebResourceError,
             ) {
-                // Only treat main-frame failures as "offline"
                 if (request.isForMainFrame) {
                     offlineView.visibility = View.VISIBLE
                     webView.visibility = View.GONE
@@ -116,7 +115,6 @@ class MainActivity : AppCompatActivity() {
                 progressBar.visibility = if (newProgress < 100) View.VISIBLE else View.GONE
             }
 
-            // Image upload for listings / avatars
             override fun onShowFileChooser(
                 view: WebView,
                 callback: ValueCallback<Array<Uri>>,
@@ -143,7 +141,6 @@ class MainActivity : AppCompatActivity() {
             webView.reload()
         }
 
-        // Hardware back navigates web history before exiting the app
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (webView.canGoBack()) {
@@ -155,20 +152,102 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        requestPushPermissionAndToken()
+
         if (savedInstanceState == null) {
-            // Support deep links (https://www.sellsomething.online/...)
-            val deepLink = intent?.data?.toString()
-            webView.loadUrl(deepLink ?: SITE_URL)
+            loadInitialUrl(intent)
         } else {
             webView.restoreState(savedInstanceState)
         }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        loadInitialUrl(intent)
+    }
+
+    private fun loadInitialUrl(intent: Intent?) {
+        val target = intent?.getStringExtra(EXTRA_OPEN_URL) ?: intent?.data?.toString()
+        when {
+            target != null -> {
+                val fullUrl = if (target.startsWith("http")) target else "$SITE_URL$target"
+                webView.loadUrl(fullUrl)
+            }
+            webView.url.isNullOrBlank() -> webView.loadUrl(SITE_URL)
+        }
+    }
+
+    /** Route OAuth to Chrome Custom Tab; keep site + auth callback in WebView. */
+    private fun handleNavigation(uri: Uri): Boolean {
+        val scheme = uri.scheme ?: return false
+
+        if (scheme != "http" && scheme != "https") {
+            openExternal(uri)
+            return true
+        }
+
+        if (OAuthHelper.isOAuthUrl(uri)) {
+            OAuthHelper.openOAuthInCustomTab(this, uri)
+            return true
+        }
+
+        if (OAuthHelper.isAuthCallback(uri)) {
+            return false
+        }
+
+        val host = uri.host ?: return false
+        return if (host in INTERNAL_HOSTS) {
+            false
+        } else {
+            openExternal(uri)
+            true
+        }
+    }
+
+    private fun requestPushPermissionAndToken() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    == PackageManager.PERMISSION_GRANTED -> PushTokenFetcher.fetch {
+                    injectPushTokenIntoWebView()
+                }
+                else -> notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            PushTokenFetcher.fetch { injectPushTokenIntoWebView() }
+        }
+    }
+
+    private fun injectPushTokenIntoWebView() {
+        val token = PushTokenStore.token ?: return
+        val safe = token.replace("\\", "\\\\").replace("'", "\\'")
+        webView.evaluateJavascript(
+            """
+            (function(){
+              window.__SELLSOMETHING_FCM_TOKEN__='$safe';
+              window.dispatchEvent(new CustomEvent('sellsomething-push-token',{detail:'$safe'}));
+            })();
+            """.trimIndent(),
+            null,
+        )
+    }
+
+    private fun injectNativeFlags() {
+        webView.evaluateJavascript(
+            """
+            (function(){
+              window.__SELLSOMETHING_NATIVE_APP__=true;
+            })();
+            """.trimIndent(),
+            null,
+        )
     }
 
     private fun openExternal(uri: Uri) {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, uri))
         } catch (_: ActivityNotFoundException) {
-            // No app can handle the link — ignore
         }
     }
 

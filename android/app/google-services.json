@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "599741508903",
+    "project_id": "sellsomething-b6b70",
+    "storage_bucket": "sellsomething-b6b70.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:599741508903:android:91839acb5897b0f75b8d02",
+        "android_client_info": {
+          "package_name": "www.sellsomething.online"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9MrQZHzAks0dS9LcFMy0VDl6M2Sx5Lko"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -116,4 +116,17 @@ export const getAdminBoosts = (token) =>
 export const adminUpdateBoostStatus = (boostId, data, token) =>
   api.put(`/boosts/${boostId}/admin-status`, data, authHeaders(token));
 
+export const registerPushToken = (data, token) =>
+  api.post("/push/register", {
+    push_token: data.token,
+    platform: data.platform,
+    device_label: data.device_label,
+  }, authHeaders(token));
+
+export const unregisterPushToken = (data, token) =>
+  api.delete("/push/register", {
+    ...authHeaders(token),
+    data: { push_token: data.token },
+  });
+
 export default api;
