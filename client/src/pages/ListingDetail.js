@@ -6,6 +6,7 @@ import ListingGallery from "../components/ListingGallery";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import BuyNowModal from "../components/BuyNowModal";
+import LoginPromptModal from "../components/LoginPromptModal";
 
 const CATEGORY_ICONS = {
   Electronics: "📱", Vehicles: "🚗", Furniture: "🛋️",
@@ -52,6 +53,7 @@ export default function ListingDetail() {
   const [sending, setSending] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showBuyNow, setShowBuyNow] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   const images = useMemo(() => getProductImages(product), [product]);
 
@@ -162,8 +164,7 @@ export default function ListingDetail() {
 
   const handleMessageClick = () => {
     if (!user) {
-      alert("Please log in to message the seller.");
-      navigate("/login");
+      setShowLoginPrompt(true);
       return;
     }
     setShowChat(true);
@@ -291,6 +292,16 @@ export default function ListingDetail() {
           </div>
         </div>
       </div>
+
+      {showLoginPrompt && (
+        <LoginPromptModal
+          icon="💬"
+          title="Message the seller"
+          highlight={product?.seller ? `Chat with ${product.seller}` : undefined}
+          message="Log in to message this seller safely inside Sell Something. We keep a record of every conversation to help if something goes wrong."
+          onClose={() => setShowLoginPrompt(false)}
+        />
+      )}
 
       {/* Buy Now Modal */}
       {showBuyNow && product && (

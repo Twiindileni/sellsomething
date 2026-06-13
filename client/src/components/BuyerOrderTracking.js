@@ -125,6 +125,12 @@ export default function BuyerOrderTracking({ order, accessToken, onOrderUpdated 
             <span className="tracking-label-key">SELLER</span>
             <span className="tracking-label-val">{order.seller_email || "—"}</span>
           </div>
+          {order.shipping_location && (
+            <div className="tracking-label-row">
+              <span className="tracking-label-key">SHIP TO</span>
+              <span className="tracking-label-val">{order.shipping_location}</span>
+            </div>
+          )}
         </div>
 
         {/* Live tracking panel */}

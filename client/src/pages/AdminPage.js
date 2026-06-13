@@ -308,7 +308,8 @@ export default function AdminPage() {
     return (
       !q ||
       u.email?.toLowerCase().includes(q) ||
-      u.full_name?.toLowerCase().includes(q)
+      u.full_name?.toLowerCase().includes(q) ||
+      u.phone?.includes(q)
     );
   });
 
@@ -334,6 +335,9 @@ export default function AdminPage() {
             </div>
             {order.dispute_reason && (
               <div className="admin-dispute-reason">Dispute: {order.dispute_reason}</div>
+            )}
+            {order.shipping_location && (
+              <div className="admin-order-ref">Ship to: {order.shipping_location}</div>
             )}
             {order.payment_reference && (
               <div className="admin-order-ref">Payment ref: {order.payment_reference}</div>
@@ -720,6 +724,9 @@ export default function AdminPage() {
                       {u.is_admin && <span className="admin-user-admin-badge">ADMIN</span>}
                     </div>
                     <div className="admin-user-email">{u.email}</div>
+                    {u.phone && (
+                      <div className="admin-user-phone">📱 {u.phone}</div>
+                    )}
                     <div className="admin-user-joined">Joined {formatDate(u.created_at)}</div>
                   </div>
                   <div className="admin-user-counts">
@@ -764,6 +771,14 @@ export default function AdminPage() {
                     {userDetail.profile.is_admin && <span className="admin-user-admin-badge">ADMIN</span>}
                   </h2>
                   <div className="admin-user-email">{userDetail.profile.email}</div>
+                  {userDetail.profile.phone && (
+                    <div className="admin-user-phone">
+                      📱{" "}
+                      <a href={`tel:${userDetail.profile.phone.replace(/\s/g, "")}`}>
+                        {userDetail.profile.phone}
+                      </a>
+                    </div>
+                  )}
                   <div className="admin-user-joined">Joined {formatDate(userDetail.profile.created_at)}</div>
                 </div>
               </div>

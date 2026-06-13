@@ -151,8 +151,16 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
           </div>
           <div className="tracking-label-row">
             <span className="tracking-label-key">SHIP TO</span>
-            <span className="tracking-label-val">{order.buyer_email || "—"}</span>
+            <span className="tracking-label-val">
+              {order.shipping_location || order.buyer_email || "—"}
+            </span>
           </div>
+          {order.shipping_location && order.buyer_email && (
+            <div className="tracking-label-row">
+              <span className="tracking-label-key">BUYER</span>
+              <span className="tracking-label-val">{order.buyer_email}</span>
+            </div>
+          )}
           <div className="tracking-label-row">
             <span className="tracking-label-key">ITEM</span>
             <span className="tracking-label-val">{order.product_title}</span>

@@ -10,6 +10,7 @@ import {
 import ListingGallery from "../components/ListingGallery";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
+import LoginPromptModal from "../components/LoginPromptModal";
 import "./EmployeeDetail.css";
 
 const PROFESSION_ICONS = {
@@ -27,6 +28,7 @@ export default function EmployeeDetail() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -138,8 +140,7 @@ export default function EmployeeDetail() {
 
   const handleMessageClick = () => {
     if (!user) {
-      alert("Please log in to message this professional.");
-      navigate("/login");
+      setShowLoginPrompt(true);
       return;
     }
     if (!providerId) {
@@ -284,6 +285,16 @@ export default function EmployeeDetail() {
           )}
         </div>
       </div>
+
+      {showLoginPrompt && employee && (
+        <LoginPromptModal
+          icon="💬"
+          title="Message this professional"
+          highlight={`Chat with ${employee.name}`}
+          message="Log in to contact service providers safely inside Sell Something. All conversations stay in-app for your protection."
+          onClose={() => setShowLoginPrompt(false)}
+        />
+      )}
 
       {showChat && providerId && (
         <div className="chat-drawer-overlay" onClick={() => setShowChat(false)}>

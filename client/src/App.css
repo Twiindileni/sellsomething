@@ -2408,6 +2408,170 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   LOGIN PROMPT MODAL
+════════════════════════════════════════════════════════════════════ */
+.login-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  background: rgba(28, 24, 20, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: fadeIn 0.2s ease;
+}
+.login-prompt-modal {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.75rem 1.5rem;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(28, 24, 20, 0.28);
+  border: 1px solid var(--dune);
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.login-prompt-close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--smoke);
+  color: var(--muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.login-prompt-close:hover {
+  background: var(--sand);
+  color: var(--ink);
+}
+.login-prompt-icon-wrap {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(212, 80, 10, 0.12) 0%, rgba(232, 106, 37, 0.08) 100%);
+  border: 2px solid rgba(212, 80, 10, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-prompt-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+.login-prompt-title {
+  font-family: var(--ff-head);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+.login-prompt-highlight {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+.login-prompt-message {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--earth);
+  margin-bottom: 1rem;
+}
+.login-prompt-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: left;
+  background: var(--smoke);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+}
+.login-prompt-benefits li {
+  font-size: 0.82rem;
+  color: var(--earth);
+  padding-left: 1.25rem;
+  position: relative;
+}
+.login-prompt-benefits li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--success);
+  font-weight: 700;
+}
+.login-prompt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.login-prompt-primary {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: 50px;
+  background: var(--accent-gradient);
+  color: var(--white);
+  font-family: var(--ff-head);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.login-prompt-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--accent-glow);
+}
+.login-prompt-secondary {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 50px;
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--ff-head);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.login-prompt-secondary:hover {
+  background: rgba(212, 80, 10, 0.08);
+}
+.login-prompt-dismiss {
+  margin-top: 0.85rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.35rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.login-prompt-dismiss:hover {
+  color: var(--earth);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    BUY NOW MODAL (ESCROW)
 ════════════════════════════════════════════════════════════════════ */
 .buynow-overlay {
@@ -2574,8 +2738,18 @@ body {
   border-radius: 6px;
   border-left: 3px solid var(--accent);
 }
-.buynow-ref-group { margin-bottom: 1.25rem; }
+.buynow-ref-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+@media (max-width: 520px) {
+  .buynow-ref-row { grid-template-columns: 1fr; }
+}
+.buynow-ref-group { margin-bottom: 0; }
 .buynow-ref-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--earth); margin-bottom: 0.4rem; }
+.buynow-required { color: var(--accent); font-weight: 700; }
 .buynow-order-id {
   font-family: monospace;
   font-size: 0.8rem;
@@ -3344,6 +3518,9 @@ body {
 .admin-user-info { flex: 1; min-width: 0; }
 .admin-user-name { font-family: var(--ff-head); font-weight: 700; color: var(--ink); }
 .admin-user-email { font-size: 0.85rem; color: var(--muted); word-break: break-all; }
+.admin-user-phone { font-size: 0.85rem; color: var(--earth); margin-top: 0.15rem; }
+.admin-user-phone a { color: var(--accent); text-decoration: none; }
+.admin-user-phone a:hover { text-decoration: underline; }
 .admin-user-joined { font-size: 0.75rem; color: var(--muted); opacity: 0.8; }
 .admin-user-admin-badge {
   margin-left: 0.5rem;

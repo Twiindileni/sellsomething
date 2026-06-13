@@ -65,6 +65,7 @@ export default function DashboardPage() {
 
   // Tab 6: Profile Settings state
   const [profileName, setProfileName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
@@ -83,6 +84,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (profile) {
       setProfileName(profile.full_name || "");
+      setProfilePhone(profile.phone || "");
       setAvatarUrl(profile.avatar_url || "");
     } else if (user) {
       setProfileName(user.user_metadata?.full_name || "");
@@ -308,6 +310,7 @@ export default function DashboardPage() {
       await updateProfile({
         full_name: profileName.trim(),
         avatar_url: avatarUrl,
+        phone: profilePhone.trim() || null,
       }, accessToken);
       setProfileSuccess(true);
       await refreshProfile();
@@ -832,6 +835,23 @@ export default function DashboardPage() {
                   required
                   disabled={updatingProfile}
                 />
+              </div>
+
+              {/* Cellphone */}
+              <div className="form-group">
+                <label className="form-label" htmlFor="profile-phone-input">Cellphone Number</label>
+                <input
+                  id="profile-phone-input"
+                  type="tel"
+                  className="form-input"
+                  value={profilePhone}
+                  onChange={(e) => setProfilePhone(e.target.value)}
+                  placeholder="e.g. +264 81 123 4567"
+                  disabled={updatingProfile}
+                />
+                <span className="register-help-text" style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                  So our admin team can reach you about orders and listings.
+                </span>
               </div>
 
               {/* Readonly email info */}

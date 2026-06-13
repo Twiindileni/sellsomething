@@ -6,6 +6,7 @@ Namibian marketplace (OLX/Gumtree style) with escrow. **When starting a new chat
 
 - **Frontend:** `client/` — React (CRA), port 3000
 - **Backend:** `server/index.js` — Express, port 5000; Vercel uses `api/index.js`
+- **Mobile:** `IOS/` (SwiftUI WebView wrapper), `android/` (Kotlin WebView wrapper) — both load www.sellsomething.online
 - **DB/Auth:** Supabase (PostgreSQL + Auth)
 - **Styles:** `client/src/App.css` — use CSS variables (`--accent`, `--success`, `--ink`, etc.)
 

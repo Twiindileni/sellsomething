@@ -628,7 +628,7 @@ app.put("/api/profiles", async (req, res) => {
   if (!token) {
     return res.status(401).json({ error: "Log in to update profile." });
   }
-  const { full_name, avatar_url } = req.body;
+  const { full_name, avatar_url, phone } = req.body;
   try {
     const userClient = supabaseForUser(token);
     const { data: { user }, error: userError } = await userClient.auth.getUser();
@@ -639,6 +639,7 @@ app.put("/api/profiles", async (req, res) => {
     const updates = {
       full_name,
       avatar_url,
+      phone: phone?.trim() || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -656,6 +657,7 @@ app.put("/api/profiles", async (req, res) => {
         email: user.email || "",
         full_name: full_name || user.user_metadata?.full_name || "",
         avatar_url: avatar_url || null,
+        phone: phone?.trim() || null,
       };
       ({ data, error } = await userClient
         .from("profiles")
@@ -844,9 +846,12 @@ app.post("/api/orders", async (req, res) => {
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
   if (!token) return res.status(401).json({ error: "Login required to place an order." });
 
-  const { product_id, seller_id, seller_email, product_title, amount, payment_method, payment_reference } = req.body;
+  const { product_id, seller_id, seller_email, product_title, amount, payment_method, payment_reference, shipping_location } = req.body;
   if (!product_id || !amount) {
     return res.status(400).json({ error: "Missing required order fields." });
+  }
+  if (!shipping_location?.trim()) {
+    return res.status(400).json({ error: "Delivery location is required." });
   }
 
   try {
@@ -888,6 +893,7 @@ app.post("/api/orders", async (req, res) => {
       status: "pending_payment",
       payment_method: payment_method || "easywallet",
       payment_reference: payment_reference || null,
+      shipping_location: shipping_location.trim(),
     }]).select().single();
 
     if (error) throw error;
@@ -1217,7 +1223,7 @@ app.get("/api/admin/users", async (req, res) => {
     const db = auth.db;
 
     const [profilesRes, productsRes, messagesRes] = await Promise.all([
-      db.from("profiles").select("id, full_name, email, avatar_url, is_admin, created_at"),
+      db.from("profiles").select("id, full_name, email, avatar_url, is_admin, phone, created_at"),
       db.from("products").select("id, seller_id, seller_email"),
       db.from("messages").select("sender_id, receiver_id"),
     ]);

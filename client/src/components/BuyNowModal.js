@@ -16,6 +16,7 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
   const [step, setStep] = useState(1); // 1=info, 2=payment instructions, 3=confirm
   const [payMethod, setPayMethod] = useState("mobile");
   const [payRef, setPayRef] = useState("");
+  const [shippingLocation, setShippingLocation] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [orderId, setOrderId] = useState(null);
@@ -42,6 +43,10 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
 
   async function handlePlaceOrder() {
     setError(null);
+    if (!shippingLocation.trim()) {
+      setError("Please enter where the item should be delivered.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await createOrder({
@@ -52,6 +57,7 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
         amount: product.price,
         payment_method: payMethod,
         payment_reference: payRef.trim() || null,
+        shipping_location: shippingLocation.trim(),
       }, session?.access_token);
       setOrderId(res.data?.id);
       setStep(3);
@@ -202,18 +208,34 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
               </div>
             )}
 
-            <div className="buynow-ref-group">
-              <label className="buynow-ref-label" htmlFor="pay-ref">
-                Payment Reference / Proof (optional but recommended)
-              </label>
-              <input
-                id="pay-ref"
-                type="text"
-                className="form-input"
-                placeholder="e.g. John Shilongo - iPhone 13"
-                value={payRef}
-                onChange={(e) => setPayRef(e.target.value)}
-              />
+            <div className="buynow-ref-row">
+              <div className="buynow-ref-group">
+                <label className="buynow-ref-label" htmlFor="pay-ref">
+                  Payment Reference (optional)
+                </label>
+                <input
+                  id="pay-ref"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. John Shilongo - iPhone 13"
+                  value={payRef}
+                  onChange={(e) => setPayRef(e.target.value)}
+                />
+              </div>
+              <div className="buynow-ref-group">
+                <label className="buynow-ref-label" htmlFor="ship-to">
+                  Delivery Location <span className="buynow-required">*</span>
+                </label>
+                <input
+                  id="ship-to"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Windhoek, Klein Windhoek, 12 Independence Ave"
+                  value={shippingLocation}
+                  onChange={(e) => setShippingLocation(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             {error && <div className="error-banner" style={{ marginBottom: "1rem" }}>⚠️ {error}</div>}
