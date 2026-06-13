@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { BRAND, COMPANY } from "../config/site";
+import BrandLogo from "./BrandLogo";
 
 function UserIcon() {
   return (
@@ -37,13 +37,7 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to="/" className="navbar-logo" onClick={closeMenu}>
-        <img
-          src={BRAND.logo}
-          alt={COMPANY.brand}
-          className="brand-logo-horizontal brand-logo-horizontal--nav"
-        />
-      </Link>
+      <BrandLogo variant="nav" onClick={closeMenu} />
 
       <div className="navbar-tools">
         {user && (

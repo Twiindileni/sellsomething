@@ -146,7 +146,7 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
         <div className="tracking-label-card tracking-label-card--seller">
           <div className="tracking-label-tape" />
           <div className="tracking-label-brand">
-            <img src={BRAND.icon} alt="" className="brand-logo-icon brand-logo-icon--sm" aria-hidden="true" />
+            <img src={BRAND.iconMark} alt="" className="brand-logo-icon brand-logo-icon--sm" aria-hidden="true" />
             {COMPANY.brand.replace(" ", "")} · Dispatch
           </div>
           <div className="tracking-label-barcode">

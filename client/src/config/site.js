@@ -1,8 +1,9 @@
 // Brand assets (served from client/public/brand/)
 export const BRAND = {
-  logo: "/brand/logo-horizontal-cropped.png",
+  logo: "/brand/logo-horizontal-transparent.png",
   logoFull: "/brand/logo-horizontal.png",
   icon: "/brand/icon.png",
+  iconMark: "/brand/icon-mark.png",
   iconDark: "/brand/icon-dark.png",
   favicon: "/brand/favicon-32.png",
   appleTouchIcon: "/brand/apple-touch-icon.png",

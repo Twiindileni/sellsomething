@@ -78,31 +78,52 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   transition: var(--transition);
 }
-.navbar-logo {
+.navbar-logo,
+.brand-logo {
   text-decoration: none;
   display: flex;
   align-items: center;
   line-height: 0;
   flex-shrink: 0;
 }
+.brand-logo--lockup {
+  gap: 0.55rem;
+  line-height: 1;
+}
+.brand-logo-mark {
+  display: block;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.brand-logo-mark--nav { height: 2.1rem; }
+.brand-logo-mark--footer { height: 2rem; }
+.brand-logo-text {
+  font-family: var(--ff-head);
+  font-weight: 800;
+  color: var(--sand);
+  letter-spacing: -0.5px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.brand-logo-text--nav { font-size: 1.55rem; }
+.brand-logo-text--footer { font-size: 1.45rem; }
+.brand-logo-text span {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 .brand-logo-horizontal {
   display: block;
   width: auto;
   object-fit: contain;
 }
-.brand-logo-horizontal--nav {
-  height: 2rem;
-  max-width: min(220px, 52vw);
-  background: var(--white);
-  border-radius: 10px;
-  padding: 0.3rem 0.65rem;
-}
-.brand-logo-horizontal--footer {
-  height: 2.25rem;
-  max-width: 240px;
-  background: var(--white);
-  border-radius: 10px;
-  padding: 0.35rem 0.75rem;
+.brand-logo-horizontal--auth {
+  height: 3.25rem;
+  max-width: min(320px, 88vw);
+  margin: 0 auto 1.25rem;
+  display: block;
 }
 .brand-logo-icon {
   display: block;
@@ -110,12 +131,6 @@ body {
   object-fit: contain;
 }
 .brand-logo-icon--sm { height: 1.5rem; }
-.brand-logo-horizontal--auth {
-  height: 3rem;
-  max-width: min(300px, 85vw);
-  margin: 0 auto 1.25rem;
-  display: block;
-}
 .navbar-tools {
   display: flex;
   align-items: center;
@@ -3690,10 +3705,12 @@ body {
   grid-template-columns: 1.2fr 2fr;
   gap: 2.5rem;
 }
-.site-footer-logo {
+.site-footer-logo,
+.brand-logo--footer {
   text-decoration: none;
-  display: inline-block;
-  line-height: 0;
+  display: inline-flex;
+  line-height: 1;
+  margin-bottom: 0.25rem;
 }
 .site-footer-tagline {
   margin: 0.75rem 0 1rem;
