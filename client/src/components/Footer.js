@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { COMPANY } from "../config/site";
+import { BRAND, COMPANY } from "../config/site";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -10,7 +10,11 @@ export default function Footer() {
       <div className="site-footer-inner">
         <div className="site-footer-brand">
           <Link to="/" className="site-footer-logo">
-            Sell<span>Something</span>
+            <img
+              src={BRAND.logo}
+              alt={COMPANY.brand}
+              className="brand-logo-horizontal brand-logo-horizontal--footer"
+            />
           </Link>
           <p className="site-footer-tagline">
             Namibia&apos;s trusted marketplace — buy and sell with escrow protection.

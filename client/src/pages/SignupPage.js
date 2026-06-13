@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import TermsModal from "../components/TermsModal";
+import { BRAND, COMPANY } from "../config/site";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -95,6 +96,11 @@ export default function SignupPage() {
         />
       )}
 
+      <img
+        src={BRAND.logo}
+        alt={COMPANY.brand}
+        className="brand-logo-horizontal brand-logo-horizontal--auth"
+      />
       <div className="sell-header">
         <h1 className="sell-title">Create an Account</h1>
         <p className="sell-sub">Join us to start buying and selling across Namibia.</p>

@@ -79,20 +79,42 @@ body {
   transition: var(--transition);
 }
 .navbar-logo {
-  font-family: var(--ff-head);
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--sand);
   text-decoration: none;
-  letter-spacing: -0.5px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  line-height: 0;
+  flex-shrink: 0;
 }
-.navbar-logo span { 
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.brand-logo-horizontal {
+  display: block;
+  width: auto;
+  object-fit: contain;
+}
+.brand-logo-horizontal--nav {
+  height: 2rem;
+  max-width: min(220px, 52vw);
+  background: var(--white);
+  border-radius: 10px;
+  padding: 0.3rem 0.65rem;
+}
+.brand-logo-horizontal--footer {
+  height: 2.25rem;
+  max-width: 240px;
+  background: var(--white);
+  border-radius: 10px;
+  padding: 0.35rem 0.75rem;
+}
+.brand-logo-icon {
+  display: block;
+  width: auto;
+  object-fit: contain;
+}
+.brand-logo-icon--sm { height: 1.5rem; }
+.brand-logo-horizontal--auth {
+  height: 3rem;
+  max-width: min(300px, 85vw);
+  margin: 0 auto 1.25rem;
+  display: block;
 }
 .navbar-tools {
   display: flex;
@@ -3001,6 +3023,9 @@ body {
   border: 1px dashed rgba(212, 80, 10, 0.4);
 }
 .tracking-label-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-family: var(--ff-head);
   font-weight: 800;
   font-size: 0.75rem;
@@ -3666,13 +3691,10 @@ body {
   gap: 2.5rem;
 }
 .site-footer-logo {
-  font-family: var(--ff-head);
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--white);
   text-decoration: none;
+  display: inline-block;
+  line-height: 0;
 }
-.site-footer-logo span { font-weight: 400; opacity: 0.9; }
 .site-footer-tagline {
   margin: 0.75rem 0 1rem;
   font-size: 0.92rem;

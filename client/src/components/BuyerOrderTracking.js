@@ -8,6 +8,7 @@ import {
   getBuyerTrackingSteps,
   isOrderTrackingLive,
 } from "../utils/orderHelpers";
+import { BRAND, COMPANY } from "../config/site";
 
 function StarRating({ value, onChange }) {
   return (
@@ -106,7 +107,10 @@ export default function BuyerOrderTracking({ order, accessToken, onOrderUpdated 
         {/* Shipping label card */}
         <div className="tracking-label-card">
           <div className="tracking-label-tape" />
-          <div className="tracking-label-brand">SellSomething</div>
+          <div className="tracking-label-brand">
+            <img src={BRAND.icon} alt="" className="brand-logo-icon brand-logo-icon--sm" aria-hidden="true" />
+            {COMPANY.brand.replace(" ", "")}
+          </div>
           <div className="tracking-label-barcode">
             <div className="tracking-barcode-lines" aria-hidden="true" />
             <span className="tracking-label-id">{order.id?.slice(0, 8).toUpperCase()}</span>

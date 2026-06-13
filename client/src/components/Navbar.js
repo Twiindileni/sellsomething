@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { BRAND, COMPANY } from "../config/site";
 
 function UserIcon() {
   return (
@@ -37,7 +38,11 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <Link to="/" className="navbar-logo" onClick={closeMenu}>
-        Sell<span>Something</span>
+        <img
+          src={BRAND.logo}
+          alt={COMPANY.brand}
+          className="brand-logo-horizontal brand-logo-horizontal--nav"
+        />
       </Link>
 
       <div className="navbar-tools">

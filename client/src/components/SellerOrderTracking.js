@@ -9,6 +9,7 @@ import {
   isOrderTrackingLive,
   minDeliveryEtaInput,
 } from "../utils/orderHelpers";
+import { BRAND, COMPANY } from "../config/site";
 
 export default function SellerOrderTracking({ order, accessToken, onOrderUpdated }) {
   const [mode, setMode] = useState(null); // "start" | "update_eta" | "progress" | "handover" | null
@@ -144,7 +145,10 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
         {/* Dispatch label */}
         <div className="tracking-label-card tracking-label-card--seller">
           <div className="tracking-label-tape" />
-          <div className="tracking-label-brand">SellSomething · Dispatch</div>
+          <div className="tracking-label-brand">
+            <img src={BRAND.icon} alt="" className="brand-logo-icon brand-logo-icon--sm" aria-hidden="true" />
+            {COMPANY.brand.replace(" ", "")} · Dispatch
+          </div>
           <div className="tracking-label-barcode">
             <div className="tracking-barcode-lines" aria-hidden="true" />
             <span className="tracking-label-id">{order.id?.slice(0, 8).toUpperCase()}</span>

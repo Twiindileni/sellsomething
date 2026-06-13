@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
+import { BRAND, COMPANY } from "../config/site";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -65,6 +66,11 @@ export default function LoginPage() {
 
   return (
     <div className="sell-page">
+      <img
+        src={BRAND.logo}
+        alt={COMPANY.brand}
+        className="brand-logo-horizontal brand-logo-horizontal--auth"
+      />
       <div className="sell-header">
         <h1 className="sell-title">Welcome Back</h1>
         <p className="sell-sub">Log in to your account to manage your listings.</p>
