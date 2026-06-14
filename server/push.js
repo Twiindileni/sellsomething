@@ -86,6 +86,10 @@ async function sendPushToUser(db, userId, notification) {
     return { sent: 0 };
   }
   const tokens = (data || []).map((row) => row.token);
+  console.log(`[push] sendPushToUser userId=${userId} tokens=${tokens.length} title="${notification.title}"`);
+  if (!tokens.length) {
+    console.warn("[push] no tokens found for user — check push_tokens table and RLS");
+  }
   return sendPushToTokens(tokens, notification);
 }
 

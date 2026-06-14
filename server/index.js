@@ -778,8 +778,13 @@ async function notifyNewMessage(senderId, receiverId, preview) {
 }
 
 async function notifyOrderUpdate(order, { title, body, targetUserId, url }) {
-  if (!targetUserId) return;
-  firePush(sendPushToUser(supabase, targetUserId, {
+  if (!targetUserId) {
+    console.warn("[push] notifyOrderUpdate called without targetUserId, skipping");
+    return;
+  }
+  const db = supabaseAdmin || supabase;
+  console.log(`[push] notifyOrderUpdate → user=${targetUserId} title="${title}"`);
+  firePush(sendPushToUser(db, targetUserId, {
     title,
     body,
     url: url || "/dashboard",
