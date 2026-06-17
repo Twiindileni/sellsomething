@@ -1,0 +1,26 @@
+HOW TO USE EMAIL TEMPLATES IN SUPABASE
+======================================
+
+── Confirm signup ──────────────────────────────────────────────
+1. Supabase → Authentication → Email Templates → "Confirm signup"
+2. Subject:  Welcome to Sell Something — confirm your email
+3. Body:     paste all of confirm_signup.html
+
+── Reset password ──────────────────────────────────────────────
+1. Supabase → Authentication → Email Templates → "Reset password"
+2. Subject:  Reset your Sell Something password
+3. Body:     paste all of reset_password.html
+
+── URL configuration (required) ───────────────────────────────
+Authentication → URL Configuration
+
+  Site URL:
+    https://www.sellsomething.online
+
+  Redirect URLs:
+    https://www.sellsomething.online/**
+    https://www.sellsomething.online/auth/callback
+    http://localhost:3001/**
+
+Do NOT change {{ .ConfirmationURL }} in either template —
+Supabase replaces it with the real link.

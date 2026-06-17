@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SellSomething" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/accent2</item>
+        <item name="android:statusBarColor">@color/charcoal</item>
+        <item name="android:navigationBarColor">@color/charcoal</item>
+        <item name="android:windowBackground">@color/smoke</item>
+    </style>
+</resources>
