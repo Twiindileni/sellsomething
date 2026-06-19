@@ -1,4 +1,5 @@
 const TERMINAL_STATUSES = ["delivered", "confirmed", "completed", "refunded", "disputed"];
+import { ClipboardList, CreditCard, Truck, Package, CheckCircle2 } from "lucide-react";
 
 export function isEtaMissed(order) {
   if (!order?.delivery_eta) return false;
@@ -63,14 +64,14 @@ export function getBuyerTrackingSteps(order) {
       label: "Order Placed",
       sub: "Your purchase is protected by escrow",
       time: order.created_at,
-      icon: "📋",
+      icon: <ClipboardList size={22} strokeWidth={2} />,
     },
     {
       id: "payment",
       label: "Payment Confirmed",
       sub: "Funds held safely until you confirm receipt",
       time: order.payment_received_at || (current > 1 ? order.updated_at : null),
-      icon: "💳",
+      icon: <CreditCard size={22} strokeWidth={2} />,
     },
     {
       id: "delivery",
@@ -80,7 +81,7 @@ export function getBuyerTrackingSteps(order) {
         order.delivery_eta_note ||
         (order.delivery_eta ? `Expected by ${formatEta(order.delivery_eta)}` : "Seller will set a delivery date"),
       time: order.seller_latest_update_at || order.in_delivery_at || (order.status === "in_delivery" ? order.updated_at : null),
-      icon: "🚚",
+      icon: <Truck size={22} strokeWidth={2} />,
       eta: order.delivery_eta,
     },
     {
@@ -91,7 +92,7 @@ export function getBuyerTrackingSteps(order) {
           ? "Seller says item is with you — only you can confirm receipt"
           : "Seller will mark when they've sent or handed over the item",
       time: order.delivered_at || (order.status === "delivered" ? order.updated_at : null),
-      icon: "📦",
+      icon: <Package size={22} strokeWidth={2} />,
     },
     {
       id: "received",
@@ -100,7 +101,7 @@ export function getBuyerTrackingSteps(order) {
         ? `You rated this ${order.buyer_rating} out of 5 stars`
         : "Confirm & rate the product to release payment",
       time: order.buyer_confirmed_at || order.rated_at,
-      icon: "✅",
+      icon: <CheckCircle2 size={22} strokeWidth={2} />,
     },
   ];
 
@@ -128,7 +129,7 @@ export function getSellerTrackingSteps(order) {
       label: "Order Received",
       sub: `Buyer: ${order.buyer_email || "—"}`,
       time: order.created_at,
-      icon: "📋",
+      icon: <ClipboardList size={22} strokeWidth={2} />,
     },
     {
       id: "payment",
@@ -138,7 +139,7 @@ export function getSellerTrackingSteps(order) {
           ? "Waiting for admin to verify buyer payment"
           : "Buyer payment confirmed — funds held safely",
       time: order.payment_received_at || (current > 1 ? order.updated_at : null),
-      icon: "💳",
+      icon: <CreditCard size={22} strokeWidth={2} />,
     },
     {
       id: "delivery",
@@ -149,7 +150,7 @@ export function getSellerTrackingSteps(order) {
           ? `Commit: deliver by ${formatEta(order.delivery_eta)}`
           : "Set a delivery ETA when you start shipping"),
       time: order.in_delivery_at || (order.status === "in_delivery" ? order.updated_at : null),
-      icon: "🚚",
+      icon: <Truck size={22} strokeWidth={2} />,
       eta: order.delivery_eta,
     },
     {
@@ -160,7 +161,7 @@ export function getSellerTrackingSteps(order) {
           ? "Buyer must confirm receipt & rate the product"
           : "Mark delivered once the buyer has the item",
       time: order.delivered_at || (order.status === "delivered" ? order.updated_at : null),
-      icon: "📦",
+      icon: <Package size={22} strokeWidth={2} />,
     },
     {
       id: "received",
@@ -169,7 +170,7 @@ export function getSellerTrackingSteps(order) {
         ? `Buyer rated ${order.buyer_rating}/5 — payout processing`
         : "You get paid only after buyer confirms",
       time: order.buyer_confirmed_at || order.rated_at,
-      icon: "✅",
+      icon: <CheckCircle2 size={22} strokeWidth={2} />,
     },
   ];
 

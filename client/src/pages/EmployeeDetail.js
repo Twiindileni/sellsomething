@@ -11,11 +11,16 @@ import ListingGallery from "../components/ListingGallery";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import LoginPromptModal from "../components/LoginPromptModal";
+import StarRating from "../components/StarRating";
 import "./EmployeeDetail.css";
+import { 
+  Baby, Leaf, Laptop, Paintbrush, Hammer, Droplets, Zap, Sparkles, Briefcase, 
+  MapPin, MessageCircle, Star, PenLine 
+} from "lucide-react";
 
 const PROFESSION_ICONS = {
-  Nanny: "👶", Gardener: "🌿", IT: "💻", Painter: "🎨",
-  Builder: "🔨", Plumber: "🚰", Electrician: "⚡", Cleaner: "🧹", Other: "💼"
+  Nanny: Baby, Gardener: Leaf, IT: Laptop, Painter: Paintbrush,
+  Builder: Hammer, Plumber: Droplets, Electrician: Zap, Cleaner: Sparkles, Other: Briefcase
 };
 
 export default function EmployeeDetail() {
@@ -212,7 +217,7 @@ export default function EmployeeDetail() {
     );
   }
 
-  const icon = PROFESSION_ICONS[employee.profession] || "💼";
+  const IconComponent = PROFESSION_ICONS[employee.profession] || Briefcase;
 
   return (
     <div className="employee-detail-page">
@@ -221,13 +226,13 @@ export default function EmployeeDetail() {
       </Link>
 
       <div className="employee-detail-grid">
-        <ListingGallery images={employee.images || []} title={employee.name} categoryIcon={icon} />
+        <ListingGallery images={employee.images || []} title={employee.name} categoryIcon={<IconComponent size={80} strokeWidth={1} color="currentColor" />} />
 
         <div className="employee-detail-info">
           <div className="employee-detail-header-flex">
             <span className="employee-detail-category">{employee.profession}</span>
             <div className="employee-rating-badge" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--sand)', padding: '0.3rem 0.8rem', borderRadius: '100px', fontWeight: 'bold' }}>
-              <span style={{ color: "#f59e0b" }}>★</span>
+              <Star size={16} fill="#f59e0b" color="#f59e0b" style={{ position: "relative", top: "1px" }} />
               {employee.rating > 0 ? Number(employee.rating).toFixed(1) : "New"} 
               <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 'normal' }}>
                 ({employee.review_count} reviews)
@@ -240,7 +245,7 @@ export default function EmployeeDetail() {
           <div className="employee-detail-meta">
             {employee.location && (
               <div className="employee-meta-row">
-                <span className="employee-meta-label">Location</span>
+                <span className="employee-meta-label"><MapPin size={14} style={{marginRight: '6px', position: 'relative', top: '2px'}}/> Location</span>
                 <span>{employee.location}</span>
               </div>
             )}
@@ -273,10 +278,11 @@ export default function EmployeeDetail() {
                 className="employee-contact-btn"
                 onClick={handleMessageClick}
                 disabled={resolvingProvider}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
               >
                 {resolvingProvider
                   ? "Loading…"
-                  : `💬 Message ${employee.name.split(" ")[0]}`}
+                  : <><MessageCircle size={18} strokeWidth={2.5} /> Message {employee.name.split(" ")[0]}</>}
               </button>
               <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--muted)", textAlign: "center", lineHeight: 1.5 }}>
                 All communication stays in-app so we can help if something goes wrong.
@@ -288,7 +294,7 @@ export default function EmployeeDetail() {
 
       {showLoginPrompt && employee && (
         <LoginPromptModal
-          icon="💬"
+          icon={<MessageCircle size={32} strokeWidth={1.5} color="var(--accent)" />}
           title="Message this professional"
           highlight={`Chat with ${employee.name}`}
           message="Log in to contact service providers safely inside Sell Something. All conversations stay in-app for your protection."
@@ -316,8 +322,9 @@ export default function EmployeeDetail() {
 
             <div className="chat-messages">
               {messages.length === 0 ? (
-                <div style={{ textAlign: "center", color: "var(--muted)", marginTop: "2rem" }}>
-                  💬 Ask about availability, pricing, or their experience.
+                <div style={{ textAlign: "center", color: "var(--muted)", marginTop: "2rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                  <MessageCircle size={32} strokeWidth={1.5} />
+                  <span>Ask about availability, pricing, or their experience.</span>
                 </div>
               ) : (
                 messages.map((m) => {
@@ -384,9 +391,7 @@ export default function EmployeeDetail() {
                         </span>
                       )}
                     </div>
-                    <span className="review-stars">
-                      {"★".repeat(rev.rating)}{"☆".repeat(5 - rev.rating)}
-                    </span>
+                    <StarRating value={rev.rating} size={16} className="review-stars" />
                   </div>
                   <p className="review-comment">{rev.comment}</p>
                 </div>
@@ -408,7 +413,7 @@ export default function EmployeeDetail() {
                   }
                 }}
               >
-                ✍️ Write a Review
+                <PenLine size={18} strokeWidth={2.5} /> Write a Review
               </button>
             ) : (
               <>

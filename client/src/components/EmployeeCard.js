@@ -1,21 +1,25 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { isCurrentlyBoosted } from "../utils/boostHelpers";
+import { 
+  Baby, Leaf, Laptop, Paintbrush, Hammer, Droplets, Zap, Sparkles, Briefcase, 
+  MapPin, Star 
+} from "lucide-react";
 
 const PROFESSION_ICONS = {
-  Nanny: "👶",
-  Gardener: "🌿",
-  IT: "💻",
-  Painter: "🎨",
-  Builder: "🔨",
-  Plumber: "🚰",
-  Electrician: "⚡",
-  Cleaner: "🧹",
-  Other: "💼"
+  Nanny: Baby,
+  Gardener: Leaf,
+  IT: Laptop,
+  Painter: Paintbrush,
+  Builder: Hammer,
+  Plumber: Droplets,
+  Electrician: Zap,
+  Cleaner: Sparkles,
+  Other: Briefcase
 };
 
 export default function EmployeeCard({ employee }) {
-  const icon = PROFESSION_ICONS[employee.profession] || "💼";
+  const IconComponent = PROFESSION_ICONS[employee.profession] || Briefcase;
   const cover = employee.image || (employee.images && employee.images[0]);
   const sponsored = isCurrentlyBoosted(employee);
 
@@ -29,7 +33,7 @@ export default function EmployeeCard({ employee }) {
       ) : (
         <div className="card-img-placeholder" style={{ background: "var(--sand)" }}>
           {sponsored && <span className="sponsored-badge">Sponsored</span>}
-          {icon}
+          <IconComponent size={64} strokeWidth={1.5} color="currentColor" />
         </div>
       )}
       <div className="card-body">
@@ -38,7 +42,7 @@ export default function EmployeeCard({ employee }) {
           <div className="employee-rating-badge" title={`${employee.rating} stars out of 5`}>
             {employee.rating > 0 ? (
               <>
-                <span style={{ color: "#f59e0b", marginRight: "4px" }}>★</span>
+                <Star size={14} fill="#f59e0b" color="#f59e0b" style={{ marginRight: "4px", position: "relative", top: "2px" }} />
                 {Number(employee.rating).toFixed(1)} 
                 <span style={{ fontSize: "0.8rem", color: "var(--muted)", marginLeft: "4px" }}>
                   ({employee.review_count})
@@ -58,10 +62,7 @@ export default function EmployeeCard({ employee }) {
         <div className="card-footer" style={{ marginTop: '1rem', borderTop: '1px solid var(--clay-light)', paddingTop: '0.5rem' }}>
           {employee.location && (
             <span className="card-location">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="7" r="3"/>
-              </svg>
+              <MapPin size={12} strokeWidth={2.5} />
               {employee.location}
             </span>
           )}

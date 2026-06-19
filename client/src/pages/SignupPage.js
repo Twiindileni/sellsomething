@@ -4,6 +4,8 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import TermsModal from "../components/TermsModal";
 import BrandLogo from "../components/BrandLogo";
+import { SuccessBanner, ErrorBanner } from "../components/StatusBanners";
+import { CheckCircle2, ClipboardList } from "lucide-react";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -102,8 +104,8 @@ export default function SignupPage() {
         <p className="sell-sub">Join us to start buying and selling across Namibia.</p>
       </div>
 
-      {success && <div className="success-banner">✅ {success}</div>}
-      {error && <div className="error-banner">⚠️ {error}</div>}
+      {success && <SuccessBanner>{success}</SuccessBanner>}
+      {error && <ErrorBanner>{error}</ErrorBanner>}
 
       <div className="sell-form-container">
         <form onSubmit={handleSubmit}>
@@ -187,11 +189,15 @@ export default function SignupPage() {
                 className="terms-read-btn"
                 onClick={() => setShowTermsModal(true)}
               >
-                📋 Read Terms &amp; Conditions
+                <ClipboardList size={16} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                Read Terms &amp; Conditions
               </button>
             )}
             {termsAccepted && (
-              <div className="terms-accepted-badge">✅ Terms accepted</div>
+              <div className="terms-accepted-badge">
+                <CheckCircle2 size={16} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                Terms accepted
+              </div>
             )}
           </div>
 

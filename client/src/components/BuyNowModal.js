@@ -1,8 +1,19 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CreditCard,
+  Landmark,
+  Lock,
+  PartyPopper,
+  Shield,
+  Smartphone,
+} from "lucide-react";
 import { createOrder } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { PAYMENT } from "../config/payment";
+import { ErrorBanner } from "./StatusBanners";
 
 const REFUND_WINDOW_DAYS = 7;
 
@@ -27,7 +38,9 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
         <div className="buynow-modal" onClick={(e) => e.stopPropagation()}>
           <button className="buynow-close" onClick={onClose}>×</button>
           <div style={{ textAlign: "center", padding: "2rem" }}>
-            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
+            <div className="icon-block">
+              <Lock size={48} strokeWidth={1.5} aria-hidden="true" />
+            </div>
             <h2 style={{ fontFamily: "var(--ff-head)", marginBottom: "1rem" }}>Login Required</h2>
             <p style={{ color: "var(--muted)", marginBottom: "1.5rem" }}>
               You need to be logged in to make a purchase.
@@ -77,7 +90,9 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
         {step === 1 && (
           <>
             <div className="buynow-header">
-              <div className="buynow-shield">🛡️</div>
+              <div className="buynow-shield">
+                <Shield size={48} strokeWidth={1.5} aria-hidden="true" />
+              </div>
               <h2 className="buynow-title">Buy with Escrow Protection</h2>
               <p className="buynow-subtitle">Your money is held safely until you confirm delivery</p>
             </div>
@@ -138,7 +153,9 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
         {step === 2 && (
           <>
             <div className="buynow-header">
-              <div className="buynow-shield">💳</div>
+              <div className="buynow-shield">
+                <CreditCard size={48} strokeWidth={1.5} aria-hidden="true" />
+              </div>
               <h2 className="buynow-title">Send Payment</h2>
               <p className="buynow-subtitle">
                 Send exactly <strong>{formatPrice(product.price)}</strong> to one of the accounts below
@@ -167,13 +184,15 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
                 className={`buynow-pay-tab ${payMethod === "mobile" ? "active" : ""}`}
                 onClick={() => setPayMethod("mobile")}
               >
-                📱 Mobile Payment
+                <Smartphone size={16} strokeWidth={2} aria-hidden="true" />
+                Mobile Payment
               </button>
               <button
                 className={`buynow-pay-tab ${payMethod === "bank" ? "active" : ""}`}
                 onClick={() => setPayMethod("bank")}
               >
-                🏦 Bank Transfer
+                <Landmark size={16} strokeWidth={2} aria-hidden="true" />
+                Bank Transfer
               </button>
             </div>
 
@@ -196,7 +215,8 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
                   <span className="buynow-pay-value highlight">{formatPrice(product.price)}</span>
                 </div>
                 <div className="buynow-pay-note">
-                  ⚠️ Use your name + listing title as the payment reference so we can match it.
+                  <AlertTriangle size={16} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                  Use your name + listing title as the payment reference so we can match it.
                 </div>
               </div>
             ) : (
@@ -220,7 +240,8 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
                   <span className="buynow-pay-value highlight">{formatPrice(product.price)}</span>
                 </div>
                 <div className="buynow-pay-note">
-                  ⚠️ Use your name + listing title as the payment reference so we can match it.
+                  <AlertTriangle size={16} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                  Use your name + listing title as the payment reference so we can match it.
                 </div>
               </div>
             )}
@@ -239,7 +260,7 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
               />
             </div>
 
-            {error && <div className="error-banner" style={{ marginBottom: "1rem" }}>⚠️ {error}</div>}
+            {error && <ErrorBanner style={{ marginBottom: "1rem" }}>{error}</ErrorBanner>}
 
             <div style={{ display: "flex", gap: "1rem" }}>
               <button className="buynow-back-btn" onClick={() => setStep(1)}>← Back</button>
@@ -249,7 +270,12 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
                 disabled={submitting}
                 style={{ flex: 1 }}
               >
-                {submitting ? "Placing order…" : "✅ I Have Paid — Place My Order"}
+                {submitting ? "Placing order…" : (
+                  <>
+                    <CheckCircle2 size={18} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                    I Have Paid — Place My Order
+                  </>
+                )}
               </button>
             </div>
           </>
@@ -258,7 +284,9 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
         {/* Step 3 — Confirmation */}
         {step === 3 && (
           <div style={{ textAlign: "center", padding: "1rem 0" }}>
-            <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>🎉</div>
+            <div className="icon-block">
+              <PartyPopper size={56} strokeWidth={1.5} aria-hidden="true" />
+            </div>
             <h2 className="buynow-title">Order Placed!</h2>
             <p style={{ color: "var(--muted)", margin: "1rem 0 1.5rem", lineHeight: 1.7 }}>
               Your order is now <strong>pending payment confirmation</strong>.<br />

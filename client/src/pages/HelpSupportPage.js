@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { Mail, Building2, Lock } from "lucide-react";
 import InfoPageLayout from "../components/InfoPageLayout";
 import { COMPANY } from "../config/site";
 import { PAYMENT } from "../config/payment";
@@ -51,7 +52,9 @@ export default function HelpSupportPage() {
         <h2>Quick contact</h2>
         <div className="info-contact-grid">
           <div className="info-contact-card">
-            <span className="info-contact-icon" aria-hidden="true">✉️</span>
+            <span className="info-contact-icon" aria-hidden="true">
+              <Mail size={22} strokeWidth={1.75} />
+            </span>
             <div className="info-contact-body">
               <strong>Email support</strong>
               <a
@@ -64,7 +67,9 @@ export default function HelpSupportPage() {
             </div>
           </div>
           <div className="info-contact-card">
-            <span className="info-contact-icon" aria-hidden="true">🏛️</span>
+            <span className="info-contact-icon" aria-hidden="true">
+              <Building2 size={22} strokeWidth={1.75} />
+            </span>
             <div className="info-contact-body">
               <strong>Registered entity</strong>
               <p className="info-contact-detail">{COMPANY.legalName}</p>
@@ -72,7 +77,9 @@ export default function HelpSupportPage() {
             </div>
           </div>
           <div className="info-contact-card">
-            <span className="info-contact-icon" aria-hidden="true">🔒</span>
+            <span className="info-contact-icon" aria-hidden="true">
+              <Lock size={22} strokeWidth={1.75} />
+            </span>
             <div className="info-contact-body">
               <strong>Escrow payments</strong>
               <p className="info-contact-detail info-contact-highlight">{PAYMENT.cellNumber}</p>

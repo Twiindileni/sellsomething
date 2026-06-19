@@ -7,11 +7,16 @@ import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import BuyNowModal from "../components/BuyNowModal";
 import LoginPromptModal from "../components/LoginPromptModal";
+import SellerNameLine from "../components/SellerNameLine";
+import { 
+  Smartphone, CarFront, Sofa, Shirt, Home, Tractor, Wrench, Package, 
+  Heart, MapPin, User, Clock, ShieldCheck, MessageCircle, Lock 
+} from "lucide-react";
 
 const CATEGORY_ICONS = {
-  Electronics: "📱", Vehicles: "🚗", Furniture: "🛋️",
-  Clothing: "👕", Property: "🏠", Agriculture: "🌾",
-  Services: "🔧", Other: "📦",
+  Electronics: Smartphone, Vehicles: CarFront, Furniture: Sofa,
+  Clothing: Shirt, Property: Home, Agriculture: Tractor,
+  Services: Wrench, Other: Package,
 };
 
 function formatPrice(price) {
@@ -202,8 +207,10 @@ export default function ListingDetail() {
     );
   }
 
-  const icon = CATEGORY_ICONS[product.category] || "📦";
+  const IconComponent = CATEGORY_ICONS[product.category] || Package;
   const hasImages = images.length > 0;
+  const isSold = !!product.is_sold;
+  const isOwnListing = user?.email === product.seller_email;
 
   return (
     <div className="detail-page">
@@ -212,7 +219,7 @@ export default function ListingDetail() {
       </Link>
 
       <div className="detail-grid">
-        <ListingGallery images={images} title={product.title} categoryIcon={icon} />
+        <ListingGallery images={images} title={product.title} categoryIcon={<IconComponent size={80} strokeWidth={1} color="currentColor" />} />
 
         <div className="detail-info">
           <div className="card-header-flex">
@@ -223,9 +230,7 @@ export default function ListingDetail() {
               aria-label={liked ? "Unlike" : "Like"}
               style={{ fontSize: '1rem', padding: '0.5rem 0.8rem' }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
+              <Heart size={18} strokeWidth={2.5} />
               {likes}
             </button>
           </div>
@@ -243,41 +248,50 @@ export default function ListingDetail() {
           <div className="detail-meta">
             {product.location && (
               <div className="meta-row">
-                <span className="meta-label">📍 Location</span>
+                <span className="meta-label"><MapPin size={14} style={{marginRight: '6px', position: 'relative', top: '2px'}}/> Location</span>
                 <span>{product.location}</span>
               </div>
             )}
             <div className="meta-row">
-              <span className="meta-label">👤 Seller</span>
-              <span>{product.seller}</span>
+              <span className="meta-label"><User size={14} style={{marginRight: '6px', position: 'relative', top: '2px'}}/> Seller</span>
+              <SellerNameLine product={product} badgeSize={14} />
             </div>
             <div className="meta-row">
-              <span className="meta-label">🕐 Posted</span>
+              <span className="meta-label"><Clock size={14} style={{marginRight: '6px', position: 'relative', top: '2px'}}/> Posted</span>
               <span>{timeAgo(product.created_at)}</span>
             </div>
           </div>
 
+          {isSold && (
+            <div className="listing-sold-banner">
+              This item has been marked as sold and is no longer available for purchase.
+              {isOwnListing && (
+                <span> You can relist it from Dashboard → My Ads &amp; Services.</span>
+              )}
+            </div>
+          )}
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
             {/* Buy Now — Escrow Protected (only show if not seller's own listing) */}
-            {user?.email !== product.seller_email && (
+            {!isOwnListing && !isSold && (
               <button
                 type="button"
                 className="contact-btn buynow-hero-btn"
-                style={{ margin: 0 }}
+                style={{ margin: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                 onClick={() => setShowBuyNow(true)}
               >
-                🛡️ Buy Now — Escrow Protected
+                <ShieldCheck size={18} strokeWidth={2.5} /> Buy Now — Escrow Protected
               </button>
             )}
 
-            {user?.email !== product.seller_email && (
+            {!isOwnListing && !isSold && (
               <button
                 type="button"
                 className="contact-btn"
-                style={{ margin: 0, background: 'var(--white)', border: '1.5px solid var(--accent)', color: 'var(--accent)', boxShadow: 'none' }}
+                style={{ margin: 0, background: 'var(--white)', border: '1.5px solid var(--accent)', color: 'var(--accent)', boxShadow: 'none', display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                 onClick={handleMessageClick}
               >
-                💬 Message Seller
+                <MessageCircle size={18} strokeWidth={2.5} /> Message Seller
               </button>
             )}
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)', textAlign: 'center', lineHeight: 1.5 }}>
@@ -286,7 +300,7 @@ export default function ListingDetail() {
 
             {/* Escrow info badge */}
             <div className="escrow-info-badge">
-              <span>🔒</span>
+              <span><Lock size={20} strokeWidth={2} style={{ color: "var(--accent)", marginTop: "2px" }} /></span>
               <span>All purchases are <strong>escrow-protected</strong>. Your money is held safely until you confirm delivery. Full refund if the item is not as described or not delivered.</span>
             </div>
           </div>
@@ -295,7 +309,7 @@ export default function ListingDetail() {
 
       {showLoginPrompt && (
         <LoginPromptModal
-          icon="💬"
+          icon={<MessageCircle size={32} strokeWidth={1.5} color="var(--accent)" />}
           title="Message the seller"
           highlight={product?.seller ? `Chat with ${product.seller}` : undefined}
           message="Log in to message this seller safely inside Sell Something. We keep a record of every conversation to help if something goes wrong."
@@ -334,7 +348,8 @@ export default function ListingDetail() {
             <div className="chat-messages">
               {messages.length === 0 ? (
                 <div style={{ textAlign: 'center', color: 'var(--muted)', marginTop: '2rem' }}>
-                  💬 Start the conversation by typing a message below.
+                  <MessageCircle size={16} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                  Start the conversation by typing a message below.
                 </div>
               ) : (
                 messages.map(m => {

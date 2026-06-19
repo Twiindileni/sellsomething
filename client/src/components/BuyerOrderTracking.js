@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Star } from "lucide-react";
 import { updateOrderStatus } from "../services/api";
 import {
   isEtaMissed,
@@ -9,8 +10,9 @@ import {
   isOrderTrackingLive,
 } from "../utils/orderHelpers";
 import { BRAND, COMPANY } from "../config/site";
+import DisplayStarRating from "./StarRating";
 
-function StarRating({ value, onChange }) {
+function StarRatingInput({ value, onChange }) {
   return (
     <div className="tracking-star-rating" role="group" aria-label="Rate this product">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -21,7 +23,11 @@ function StarRating({ value, onChange }) {
           onClick={() => onChange(star)}
           aria-label={`${star} star${star !== 1 ? "s" : ""}`}
         >
-          ★
+          <Star
+            size={28}
+            fill={star <= value ? "currentColor" : "none"}
+            strokeWidth={star <= value ? 0 : 1.75}
+          />
         </button>
       ))}
     </div>
@@ -208,7 +214,7 @@ export default function BuyerOrderTracking({ order, accessToken, onOrderUpdated 
 
           {isFinished && order.buyer_rating && (
             <div className="tracking-rating-summary">
-              <span className="tracking-rating-stars">{"★".repeat(order.buyer_rating)}{"☆".repeat(5 - order.buyer_rating)}</span>
+              <DisplayStarRating value={order.buyer_rating} size={18} className="tracking-rating-stars" />
               {order.buyer_review && <p>{order.buyer_review}</p>}
             </div>
           )}
@@ -231,7 +237,7 @@ export default function BuyerOrderTracking({ order, accessToken, onOrderUpdated 
                 Payment is only released to the seller after you confirm. Rate the product honestly to help other buyers.
               </p>
               <label className="form-label">Your rating</label>
-              <StarRating value={rating} onChange={setRating} />
+              <StarRatingInput value={rating} onChange={setRating} />
               <label className="form-label" htmlFor={`review-${order.id}`}>Review (optional)</label>
               <textarea
                 id={`review-${order.id}`}

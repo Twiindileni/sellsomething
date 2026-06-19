@@ -1,7 +1,16 @@
 import React, { useState } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CreditCard,
+  Landmark,
+  Smartphone,
+  Star,
+} from "lucide-react";
 import { BOOST_PLANS } from "../config/site";
 import { PAYMENT } from "../config/payment";
 import { createBoost } from "../services/api";
+import { ErrorBanner } from "./StatusBanners";
 
 function formatPrice(amount) {
   return "N$ " + Number(amount).toLocaleString("en-NA", { minimumFractionDigits: 0 });
@@ -54,7 +63,9 @@ export default function BoostModal({ target, targetType, accessToken, onClose, o
         {step === 1 && (
           <>
             <div className="buynow-header">
-              <div className="buynow-shield">⭐</div>
+              <div className="buynow-shield">
+                <Star size={48} strokeWidth={1.5} aria-hidden="true" />
+              </div>
               <h2 className="buynow-title">Boost to Sponsored</h2>
               <p className="buynow-subtitle">
                 Pin <strong>{title}</strong> to the top with a <strong>Sponsored</strong> badge
@@ -105,7 +116,9 @@ export default function BoostModal({ target, targetType, accessToken, onClose, o
         {step === 2 && (
           <>
             <div className="buynow-header">
-              <div className="buynow-shield">💳</div>
+              <div className="buynow-shield">
+                <CreditCard size={48} strokeWidth={1.5} aria-hidden="true" />
+              </div>
               <h2 className="buynow-title">Pay Boost Fee</h2>
               <p className="buynow-subtitle">
                 Send <strong>{formatPrice(plan.fee)}</strong> for <strong>{plan.label}</strong> sponsored placement
@@ -117,14 +130,16 @@ export default function BoostModal({ target, targetType, accessToken, onClose, o
                 className={`buynow-pay-tab ${payMethod === "mobile" ? "active" : ""}`}
                 onClick={() => setPayMethod("mobile")}
               >
-                📱 Mobile Payment
+                <Smartphone size={16} strokeWidth={2} aria-hidden="true" />
+                Mobile Payment
               </button>
               <button
                 type="button"
                 className={`buynow-pay-tab ${payMethod === "bank" ? "active" : ""}`}
                 onClick={() => setPayMethod("bank")}
               >
-                🏦 Bank Transfer
+                <Landmark size={16} strokeWidth={2} aria-hidden="true" />
+                Bank Transfer
               </button>
             </div>
             {payMethod === "mobile" ? (
@@ -171,7 +186,7 @@ export default function BoostModal({ target, targetType, accessToken, onClose, o
                 onChange={(e) => setPayRef(e.target.value)}
               />
             </div>
-            {error && <div className="error-banner" style={{ marginBottom: "1rem" }}>⚠️ {error}</div>}
+            {error && <ErrorBanner style={{ marginBottom: "1rem" }}>{error}</ErrorBanner>}
             <div style={{ display: "flex", gap: "1rem" }}>
               <button type="button" className="buynow-back-btn" onClick={() => setStep(1)}>← Back</button>
               <button
@@ -181,7 +196,12 @@ export default function BoostModal({ target, targetType, accessToken, onClose, o
                 disabled={submitting}
                 style={{ flex: 1 }}
               >
-                {submitting ? "Submitting…" : "✅ I Have Paid — Request Boost"}
+                {submitting ? "Submitting…" : (
+                  <>
+                    <CheckCircle2 size={18} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                    I Have Paid — Request Boost
+                  </>
+                )}
               </button>
             </div>
           </>
@@ -189,7 +209,9 @@ export default function BoostModal({ target, targetType, accessToken, onClose, o
 
         {step === 3 && done && (
           <div style={{ textAlign: "center", padding: "1.5rem 0" }}>
-            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⭐</div>
+            <div className="icon-block">
+              <Star size={48} strokeWidth={1.5} aria-hidden="true" />
+            </div>
             <h2 className="buynow-title">Boost request sent!</h2>
             <p className="buynow-subtitle" style={{ marginBottom: "1.5rem" }}>
               Admin will confirm your payment and activate sponsored placement for {plan.label}.

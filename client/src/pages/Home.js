@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { SearchX } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
 import ProductCard from "../components/ProductCard";
 
@@ -84,7 +85,9 @@ export default function Home() {
 
         {!loading && !error && products.length === 0 && (
           <div className="empty-wrap">
-            <div style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>🌵</div>
+            <div className="icon-block icon-block--lg">
+              <SearchX size={48} strokeWidth={1.5} aria-hidden="true" />
+            </div>
             No listings found. Be the first to post one!
           </div>
         )}

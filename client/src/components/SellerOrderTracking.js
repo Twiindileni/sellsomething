@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { updateOrderStatus } from "../services/api";
+import { updateOrderStatus, markProductSold } from "../services/api";
 import {
   isEtaMissed,
   formatEta,
@@ -10,14 +10,23 @@ import {
   minDeliveryEtaInput,
 } from "../utils/orderHelpers";
 import { BRAND, COMPANY } from "../config/site";
+import {
+  SELLER_PAYOUT_METHODS,
+  sellerPayoutMethodLabel,
+  sellerPayoutDetailsPlaceholder,
+} from "../config/payment";
+import StarRating from "./StarRating";
 
 export default function SellerOrderTracking({ order, accessToken, onOrderUpdated }) {
-  const [mode, setMode] = useState(null); // "start" | "update_eta" | "progress" | "handover" | null
+  const [mode, setMode] = useState(null); // "start" | "update_eta" | "progress" | "handover" | "payout" | null
   const [deliveryEta, setDeliveryEta] = useState("");
   const [deliveryEtaNote, setDeliveryEtaNote] = useState("");
   const [progressNote, setProgressNote] = useState("");
   const [handoverNote, setHandoverNote] = useState("");
+  const [payoutMethod, setPayoutMethod] = useState("");
+  const [payoutDetails, setPayoutDetails] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [listingMarkedSold, setListingMarkedSold] = useState(false);
 
   const etaMissed = isEtaMissed(order);
   const steps = getSellerTrackingSteps(order);
@@ -32,6 +41,40 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
     setDeliveryEtaNote("");
     setProgressNote("");
     setHandoverNote("");
+    setPayoutMethod("");
+    setPayoutDetails("");
+  }
+
+  function openPayoutForm() {
+    setMode("payout");
+    setPayoutMethod(order.seller_payout_method || "pay_to_cell");
+    setPayoutDetails(order.seller_payout_details || "");
+  }
+
+  async function handleSavePayout() {
+    if (!payoutMethod || !payoutDetails.trim()) {
+      alert("Please select a payout method and enter your details.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await updateOrderStatus(
+        order.id,
+        order.status,
+        {
+          action: "update_seller_payout",
+          seller_payout_method: payoutMethod,
+          seller_payout_details: payoutDetails.trim(),
+        },
+        accessToken
+      );
+      onOrderUpdated(res.data);
+      resetForm();
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || "Could not save payout details.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
 
@@ -62,6 +105,10 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
       alert("Please set a delivery date and time.");
       return;
     }
+    if (!payoutMethod || !payoutDetails.trim()) {
+      alert("Please tell us how you want to be paid after the buyer confirms.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await updateOrderStatus(
@@ -70,6 +117,8 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
         {
           delivery_eta: new Date(deliveryEta).toISOString(),
           delivery_eta_note: deliveryEtaNote.trim() || undefined,
+          seller_payout_method: payoutMethod,
+          seller_payout_details: payoutDetails.trim(),
         },
         accessToken
       );
@@ -126,10 +175,26 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
     }
   }
 
+  async function handleMarkListingSold() {
+    if (!order.product_id || !accessToken) return;
+    if (!window.confirm("Mark this listing as sold? It will be hidden from browse (you can relist later).")) return;
+    setSubmitting(true);
+    try {
+      await markProductSold(order.product_id, true, accessToken);
+      setListingMarkedSold(true);
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || "Could not mark listing as sold.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   function openStartDelivery() {
     setMode("start");
     setDeliveryEta("");
     setDeliveryEtaNote("");
+    setPayoutMethod(order.seller_payout_method || "pay_to_cell");
+    setPayoutDetails(order.seller_payout_details || "");
   }
 
   function openUpdateEta() {
@@ -176,6 +241,15 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
               N$ {Number(order.amount).toLocaleString("en-NA", { minimumFractionDigits: 2 })}
             </span>
           </div>
+          {order.seller_payout_method && (
+            <div className="tracking-label-row tracking-label-row--payout">
+              <span className="tracking-label-key">PAID TO YOU VIA</span>
+              <span className="tracking-label-val">
+                {sellerPayoutMethodLabel(order.seller_payout_method)}
+                <span className="tracking-payout-details">{order.seller_payout_details}</span>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Status panel */}
@@ -243,7 +317,7 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
           )}
 
           {/* Seller actions — updates sync to buyer tracker */}
-          {order.status === "payment_received" && mode !== "start" && mode !== "progress" && (
+          {order.status === "payment_received" && mode !== "start" && mode !== "progress" && mode !== "payout" && (
             <div className="seller-action-row">
               <button type="button" className="order-confirm-btn" onClick={openStartDelivery}>
                 Start Delivery — Set ETA
@@ -302,6 +376,32 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
                 value={deliveryEtaNote}
                 onChange={(e) => setDeliveryEtaNote(e.target.value)}
               />
+              <div className="seller-payout-section">
+                <h4 className="seller-payout-title">How should we pay you?</h4>
+                <p className="tracking-confirm-sub">
+                  After the buyer confirms receipt, admin releases your payout using these details.
+                </p>
+                <label className="form-label" htmlFor={`seller-payout-method-${order.id}`}>Payout method</label>
+                <select
+                  id={`seller-payout-method-${order.id}`}
+                  className="form-input"
+                  value={payoutMethod}
+                  onChange={(e) => setPayoutMethod(e.target.value)}
+                >
+                  {SELLER_PAYOUT_METHODS.map((m) => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </select>
+                <label className="form-label" htmlFor={`seller-payout-details-${order.id}`}>Your details</label>
+                <input
+                  id={`seller-payout-details-${order.id}`}
+                  type="text"
+                  className="form-input"
+                  placeholder={sellerPayoutDetailsPlaceholder(payoutMethod)}
+                  value={payoutDetails}
+                  onChange={(e) => setPayoutDetails(e.target.value)}
+                />
+              </div>
               <div className="order-card-actions">
                 <button type="button" className="order-confirm-btn" onClick={handleStartDelivery} disabled={submitting}>
                   {submitting ? "Saving…" : "Start Delivery"}
@@ -311,7 +411,63 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
             </div>
           )}
 
-          {order.status === "in_delivery" && mode !== "update_eta" && mode !== "handover" && mode !== "progress" && (
+          {["in_delivery", "delivered", "confirmed"].includes(order.status) &&
+            !order.seller_payout_method &&
+            mode !== "payout" && (
+            <div className="order-pending-note seller-status-note seller-status-note--warn">
+              Add how you want to be paid so admin can release your payout after the buyer confirms.
+              <button type="button" className="cat-btn seller-payout-add-btn" onClick={openPayoutForm}>
+                Add payout details
+              </button>
+            </div>
+          )}
+
+          {order.seller_payout_method && mode !== "payout" && !isFinished && (
+            <div className="seller-payout-summary">
+              <span>Payout via <strong>{sellerPayoutMethodLabel(order.seller_payout_method)}</strong></span>
+              <span className="seller-payout-summary-detail">{order.seller_payout_details}</span>
+              <button type="button" className="cat-btn seller-payout-edit-btn" onClick={openPayoutForm}>
+                Edit
+              </button>
+            </div>
+          )}
+
+          {mode === "payout" && (
+            <div className="tracking-confirm-panel seller-action-panel">
+              <h4 className="tracking-confirm-title">Payout details for admin</h4>
+              <p className="tracking-confirm-sub">
+                We use this to pay you after the buyer confirms they received the item.
+              </p>
+              <label className="form-label" htmlFor={`seller-payout-only-method-${order.id}`}>Payout method</label>
+              <select
+                id={`seller-payout-only-method-${order.id}`}
+                className="form-input"
+                value={payoutMethod}
+                onChange={(e) => setPayoutMethod(e.target.value)}
+              >
+                {SELLER_PAYOUT_METHODS.map((m) => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </select>
+              <label className="form-label" htmlFor={`seller-payout-only-details-${order.id}`}>Your details</label>
+              <input
+                id={`seller-payout-only-details-${order.id}`}
+                type="text"
+                className="form-input"
+                placeholder={sellerPayoutDetailsPlaceholder(payoutMethod)}
+                value={payoutDetails}
+                onChange={(e) => setPayoutDetails(e.target.value)}
+              />
+              <div className="order-card-actions">
+                <button type="button" className="order-confirm-btn" onClick={handleSavePayout} disabled={submitting}>
+                  {submitting ? "Saving…" : "Save payout details"}
+                </button>
+                <button type="button" className="cat-btn" onClick={resetForm} disabled={submitting}>Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {order.status === "in_delivery" && mode !== "update_eta" && mode !== "handover" && mode !== "progress" && mode !== "payout" && (
             <div className="seller-action-row">
               <button
                 type="button"
@@ -396,6 +552,26 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
             </div>
           )}
 
+          {["confirmed", "completed"].includes(order.status) && order.product_id && !listingMarkedSold && (
+            <div className="seller-mark-sold-box">
+              <p>Sold this item? Mark the listing so buyers don&apos;t see it in search.</p>
+              <button
+                type="button"
+                className="order-confirm-btn"
+                onClick={handleMarkListingSold}
+                disabled={submitting}
+              >
+                Mark listing as sold
+              </button>
+            </div>
+          )}
+
+          {listingMarkedSold && (
+            <div className="order-pending-note seller-status-note seller-status-note--success">
+              Listing marked as sold — hidden from browse. Relist anytime from My Ads &amp; Services.
+            </div>
+          )}
+
           {order.status === "confirmed" && (
             <div className="order-pending-note seller-status-note seller-status-note--success">
               Buyer confirmed! Payout of <strong>N$ {Number(order.amount).toLocaleString("en-NA")}</strong> processing within 24 hours.
@@ -411,9 +587,7 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
           {isFinished && order.buyer_rating && (
             <div className="tracking-rating-summary">
               <span className="tracking-rating-label">Buyer rated your sale</span>
-              <span className="tracking-rating-stars">
-                {"★".repeat(order.buyer_rating)}{"☆".repeat(5 - order.buyer_rating)}
-              </span>
+              <StarRating value={order.buyer_rating} size={18} className="tracking-rating-stars" />
               {order.buyer_review && <p>{order.buyer_review}</p>}
             </div>
           )}

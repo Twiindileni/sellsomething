@@ -3,6 +3,12 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build --prefix client",
   "outputDirectory": "client/build",
+  "crons": [
+    {
+      "path": "/api/cron/reengagement",
+      "schedule": "0 7 1 * *"
+    }
+  ],
   "routes": [
     { "handle": "filesystem" },
     { "src": "/api/(.*)", "dest": "/api" },

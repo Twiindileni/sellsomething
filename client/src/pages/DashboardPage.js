@@ -4,9 +4,11 @@ import { useAuth } from "../context/AuthContext";
 import { 
   getMyProducts, 
   getMyEmployees, 
-  deleteProduct, 
+  deleteProduct,
+  markProductSold,
   getProducts, 
-  updateProfile, 
+  updateProfile,
+  requestSellerVerification,
   uploadProductImage, 
   getConversations, 
   sendMessage, 
@@ -15,7 +17,6 @@ import {
   getMyBoosts,
 } from "../services/api";
 import ProductCard from "../components/ProductCard";
-import EmployeeCard from "../components/EmployeeCard";
 import BoostModal from "../components/BoostModal";
 import { boostStatusForTarget, formatBoostExpiry } from "../utils/boostHelpers";
 import { isEtaMissed, sellerNeedsAction } from "../utils/orderHelpers";
@@ -27,11 +28,129 @@ import {
 } from "../utils/messageHelpers";
 import BuyerOrderTracking from "../components/BuyerOrderTracking";
 import SellerOrderTracking from "../components/SellerOrderTracking";
-import "../pages/EmployeeDirectory.css";
+import { SuccessBanner, ErrorBanner } from "../components/StatusBanners";
+import VerifiedBadge from "../components/VerifiedBadge";
+import { MessageCircle, ShoppingCart, Star, User, Clock, Briefcase, Package, Heart, Settings, BadgeCheck, Mail, AlertTriangle } from "lucide-react";
+
+const ID_PHOTO_MAX_BYTES = 10 * 1024 * 1024;
+
+function formatVerificationDate(dateStr) {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleString("en-NA", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function VerificationPendingView({ profile, justSubmitted, confirmationEmail }) {
+  const submittedAt = profile?.verification_requested_at;
+  const emailLine = confirmationEmail || profile?.email;
+
+  return (
+    <div className="profile-verification-pending">
+      <SuccessBanner className="profile-verification-sent-banner">
+        <div className="profile-verification-sent-text">
+          <strong>Email sent successfully.</strong>
+          <span>
+            Your ID and verification details were securely emailed to our team.
+            We do not store your ID in the app.
+          </span>
+        </div>
+      </SuccessBanner>
+
+      <div className="profile-verification-pending-status">
+        <span className="profile-verification-pending-pill">
+          <Clock size={14} strokeWidth={2} aria-hidden="true" />
+          Verification pending
+        </span>
+        {submittedAt && (
+          <span className="profile-verification-pending-date">
+            Submitted {formatVerificationDate(submittedAt)}
+          </span>
+        )}
+      </div>
+
+      <p className="profile-verification-pending-hint">
+        {justSubmitted
+          ? `Thank you! Our team will review your social profiles and ID within 1–2 business days.${
+              emailLine
+                ? ` A confirmation was sent to ${emailLine}.`
+                : " A confirmation was sent to your registered email."
+            }`
+          : "Our team is reviewing your submission. You'll get a push notification when you're verified."}
+      </p>
+
+      <div className="profile-verification-pending-next">
+        <Mail size={16} strokeWidth={2} aria-hidden="true" />
+        <span>No further action needed — we'll email you if we need anything else.</span>
+      </div>
+
+      <VerificationSocialSummary profile={profile} />
+    </div>
+  );
+}
+
+function VerificationRejectedView({ profile }) {
+  const declinedAt = profile?.verification_rejected_at;
+  const reason = profile?.verification_rejection_reason;
+
+  return (
+    <div className="profile-verification-rejected">
+      <ErrorBanner className="profile-verification-rejected-banner">
+        <div className="profile-verification-rejected-text">
+          <strong>Verification not approved</strong>
+          <span>
+            {reason || "Our team could not verify your submission. Please review the reason below and apply again."}
+          </span>
+        </div>
+      </ErrorBanner>
+      {declinedAt && (
+        <p className="profile-verification-rejected-date">
+          Declined {formatVerificationDate(declinedAt)}
+        </p>
+      )}
+      <p className="profile-verification-rejected-hint">
+        Fix the issue below and submit a new application. We&apos;ll review it again within 1–2 business days.
+      </p>
+    </div>
+  );
+}
+
+function VerificationSocialSummary({ profile }) {
+  const items = [
+    { label: "Facebook", value: profile?.verification_social_facebook },
+    { label: "Instagram", value: profile?.verification_social_instagram },
+    { label: "TikTok", value: profile?.verification_social_tiktok },
+    { label: "LinkedIn", value: profile?.verification_social_linkedin },
+  ].filter((i) => i.value);
+
+  if (!items.length && !profile?.verification_note) return null;
+
+  return (
+    <div className="profile-verification-submitted">
+      <p className="profile-verification-submitted-title">Submitted for review:</p>
+      <ul className="profile-verification-social-list">
+        {items.map((item) => (
+          <li key={item.label}>
+            <strong>{item.label}:</strong> {item.value}
+          </li>
+        ))}
+      </ul>
+      {profile?.verification_note && (
+        <p className="profile-verification-submitted-note">
+          <strong>Note:</strong> {profile.verification_note}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { user, session, profile, signOut, refreshProfile } = useAuth();
+  const { user, session, profile, signOut, refreshProfile, mergeProfile } = useAuth();
   const accessToken = session?.access_token;
   
   const [activeTab, setActiveTab] = useState("listings");
@@ -70,6 +189,26 @@ export default function DashboardPage() {
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [profileSuccess, setProfileSuccess] = useState(false);
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState(null);
+  const [verifySocialFacebook, setVerifySocialFacebook] = useState("");
+  const [verifySocialInstagram, setVerifySocialInstagram] = useState("");
+  const [verifySocialTiktok, setVerifySocialTiktok] = useState("");
+  const [verifySocialLinkedin, setVerifySocialLinkedin] = useState("");
+  const [verifyNote, setVerifyNote] = useState("");
+  const [verifyIdPhoto, setVerifyIdPhoto] = useState(null);
+  const [verifyConsent, setVerifyConsent] = useState(false);
+  const [verificationJustSubmitted, setVerificationJustSubmitted] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState(null);
+
+  const isVerifiedSeller = !!profile?.is_verified_seller;
+  const verificationPending =
+    !isVerifiedSeller
+    && (!!profile?.verification_requested_at || verificationJustSubmitted);
+  const verificationRejected =
+    !isVerifiedSeller
+    && !verificationPending
+    && !!profile?.verification_rejected_at;
 
   const [globalError, setGlobalError] = useState(null);
   const [readRevision, setReadRevision] = useState(0);
@@ -90,6 +229,26 @@ export default function DashboardPage() {
       setProfileName(user.user_metadata?.full_name || "");
     }
   }, [profile, user]);
+
+  useEffect(() => {
+    if (profile?.is_verified_seller) {
+      setVerificationJustSubmitted(false);
+    }
+  }, [profile?.is_verified_seller]);
+
+  useEffect(() => {
+    if (activeTab === "settings" && user?.id) {
+      refreshProfile();
+    }
+  }, [activeTab, user?.id, refreshProfile]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      if (user?.id) refreshProfile();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [user?.id, refreshProfile]);
 
   // Load Tab 1: Listings & Services
   const loadListings = useCallback(async () => {
@@ -128,14 +287,16 @@ export default function DashboardPage() {
     if (status.type === "active") {
       return (
         <p className="dashboard-boost-status dashboard-boost-status--active">
-          ⭐ Sponsored until {formatBoostExpiry(target.boost_ends_at || status.boost?.ends_at)}
+          <Star size={14} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+          Sponsored until {formatBoostExpiry(target.boost_ends_at || status.boost?.ends_at)}
         </p>
       );
     }
     if (status.type === "pending") {
       return (
         <p className="dashboard-boost-status dashboard-boost-status--pending">
-          ⏳ Boost pending admin approval
+          <Clock size={14} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+          Boost pending admin approval
         </p>
       );
     }
@@ -145,7 +306,8 @@ export default function DashboardPage() {
         className="dashboard-boost-btn"
         onClick={() => openBoostModal(targetType, target)}
       >
-        ⭐ Boost — pin to top
+        <Star size={14} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+        Boost — pin to top
       </button>
     );
   }
@@ -291,11 +453,86 @@ export default function DashboardPage() {
   const salesActionCount = mySales.filter((o) => sellerNeedsAction(o)).length;
 
   const handleDeleteListing = async (productId) => {
+    if (!window.confirm("Delete this listing permanently?")) return;
     try {
       await deleteProduct(productId);
       setListings((prev) => prev.filter((item) => item.id !== productId));
     } catch (err) {
       alert("Failed to delete listing: " + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleMarkListingSold = async (productId, sold) => {
+    if (!accessToken) return;
+    const label = sold ? "mark this listing as sold?" : "relist this item?";
+    if (!window.confirm(`Are you sure you want to ${label}`)) return;
+    try {
+      const res = await markProductSold(productId, sold, accessToken);
+      setListings((prev) => prev.map((item) => (item.id === productId ? res.data : item)));
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || "Could not update listing.");
+    }
+  };
+
+  const handleRequestVerification = async (e) => {
+    e?.preventDefault();
+    if (!accessToken) return;
+    if (!profilePhone.trim()) {
+      setVerificationMessage({ ok: false, text: "Save your cellphone number first, then submit verification." });
+      return;
+    }
+    const hasSocial = [verifySocialFacebook, verifySocialInstagram, verifySocialTiktok, verifySocialLinkedin]
+      .some((s) => s.trim());
+    if (!hasSocial) {
+      setVerificationMessage({ ok: false, text: "Add at least one social media profile." });
+      return;
+    }
+    if (!verifyIdPhoto) {
+      setVerificationMessage({ ok: false, text: "Please upload or take a photo of your ID." });
+      return;
+    }
+    if (verifyIdPhoto.size > ID_PHOTO_MAX_BYTES) {
+      setVerificationMessage({ ok: false, text: "ID photo must be 10MB or smaller." });
+      return;
+    }
+    if (!verifyConsent) {
+      setVerificationMessage({ ok: false, text: "Please confirm consent to use your ID for verification only." });
+      return;
+    }
+    setVerificationLoading(true);
+    setVerificationMessage(null);
+    try {
+      const res = await requestSellerVerification({
+        idPhoto: verifyIdPhoto,
+        social_facebook: verifySocialFacebook.trim(),
+        social_instagram: verifySocialInstagram.trim(),
+        social_tiktok: verifySocialTiktok.trim(),
+        social_linkedin: verifySocialLinkedin.trim(),
+        verification_note: verifyNote.trim(),
+      }, accessToken);
+      setVerificationJustSubmitted(true);
+      if (res.data?.userEmail) {
+        setConfirmationEmail(res.data.userEmail);
+      }
+      if (res.data?.profile) {
+        mergeProfile(res.data.profile);
+      }
+      await refreshProfile();
+      setVerifyIdPhoto(null);
+      setVerifyConsent(false);
+      setVerifySocialFacebook("");
+      setVerifySocialInstagram("");
+      setVerifySocialTiktok("");
+      setVerifySocialLinkedin("");
+      setVerifyNote("");
+      setVerificationMessage(null);
+    } catch (err) {
+      setVerificationMessage({
+        ok: false,
+        text: err.response?.data?.error || err.message || "Could not submit request.",
+      });
+    } finally {
+      setVerificationLoading(false);
     }
   };
 
@@ -431,7 +668,31 @@ export default function DashboardPage() {
             <h1 className="dashboard-title">My Dashboard</h1>
             <p className="dashboard-sub">
               Welcome back, <strong>{displayName}</strong>
+              {isVerifiedSeller && (
+                <span className="dashboard-header-verified">
+                  {" "}
+                  <VerifiedBadge size={14} />
+                </span>
+              )}
             </p>
+            {isVerifiedSeller && (
+              <p className="dashboard-verification-banner dashboard-verification-banner--verified">
+                <BadgeCheck size={16} strokeWidth={2} aria-hidden="true" />
+                You are a verified seller — buyers see your badge on your listings.
+              </p>
+            )}
+            {verificationPending && (
+              <p className="dashboard-verification-banner dashboard-verification-banner--pending">
+                <Clock size={16} strokeWidth={2} aria-hidden="true" />
+                Verification pending — our team is reviewing your submission.
+              </p>
+            )}
+            {verificationRejected && (
+              <p className="dashboard-verification-banner dashboard-verification-banner--rejected">
+                <AlertTriangle size={16} strokeWidth={2} aria-hidden="true" />
+                Verification declined — you can reapply in Profile Settings.
+              </p>
+            )}
             <p className="dashboard-email">{user?.email}</p>
           </div>
         </div>
@@ -455,54 +716,66 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {globalError && <div className="error-banner">⚠️ {globalError}</div>}
+      {globalError && <ErrorBanner>{globalError}</ErrorBanner>}
 
-      {/* Tabs list navigation */}
+      {/* Tabs — 3-column card grid */}
       <div className="dashboard-tabs">
         <button
+          type="button"
           className={`dashboard-tab-btn ${activeTab === "listings" ? "active" : ""}`}
           onClick={() => setActiveTab("listings")}
         >
-          My Ads &amp; Services
+          <Package size={22} strokeWidth={1.75} className="dashboard-tab-icon" aria-hidden="true" />
+          <span className="dashboard-tab-label">My Ads &amp; Services</span>
         </button>
         <button
+          type="button"
           className={`dashboard-tab-btn ${activeTab === "purchases" ? "active" : ""}`}
           onClick={() => setActiveTab("purchases")}
         >
-          🛒 My Purchases
           {purchaseActionCount > 0 && (
             <span className="dashboard-tab-badge">{purchaseActionCount}</span>
           )}
+          <ShoppingCart size={22} strokeWidth={1.75} className="dashboard-tab-icon" aria-hidden="true" />
+          <span className="dashboard-tab-label">My Purchases</span>
         </button>
         <button
+          type="button"
           className={`dashboard-tab-btn ${activeTab === "sales" ? "active" : ""}`}
           onClick={() => setActiveTab("sales")}
         >
-          💼 My Sales
           {salesActionCount > 0 && (
             <span className="dashboard-tab-badge">{salesActionCount}</span>
           )}
+          <Briefcase size={22} strokeWidth={1.75} className="dashboard-tab-icon" aria-hidden="true" />
+          <span className="dashboard-tab-label">My Sales</span>
         </button>
         <button
-          className={`dashboard-tab-btn ${activeTab === "favorites" ? "active" : ""}`}
-          onClick={() => setActiveTab("favorites")}
-        >
-          Saved Items
-        </button>
-        <button
+          type="button"
           className={`dashboard-tab-btn ${activeTab === "messages" ? "active" : ""}`}
           onClick={() => setActiveTab("messages")}
         >
-          💬 Inbox Messages
           {unreadMessageCount > 0 && (
             <span className="dashboard-tab-badge">{unreadMessageCount}</span>
           )}
+          <MessageCircle size={22} strokeWidth={1.75} className="dashboard-tab-icon" aria-hidden="true" />
+          <span className="dashboard-tab-label">Inbox Messages</span>
         </button>
         <button
+          type="button"
+          className={`dashboard-tab-btn ${activeTab === "favorites" ? "active" : ""}`}
+          onClick={() => setActiveTab("favorites")}
+        >
+          <Heart size={22} strokeWidth={1.75} className="dashboard-tab-icon" aria-hidden="true" />
+          <span className="dashboard-tab-label">Saved Items</span>
+        </button>
+        <button
+          type="button"
           className={`dashboard-tab-btn ${activeTab === "settings" ? "active" : ""}`}
           onClick={() => setActiveTab("settings")}
         >
-          Profile Settings
+          <Settings size={22} strokeWidth={1.75} className="dashboard-tab-icon" aria-hidden="true" />
+          <span className="dashboard-tab-label">Profile Settings</span>
         </button>
       </div>
 
@@ -511,7 +784,10 @@ export default function DashboardPage() {
       {/* My Purchases Tab (Buyer) */}
       {activeTab === "purchases" && (
         <section className="dashboard-section">
-          <h2 className="dashboard-section-title">🛒 My Purchases</h2>
+          <h2 className="dashboard-section-title">
+            <ShoppingCart size={20} strokeWidth={2} className="tab-icon" aria-hidden="true" />
+            My Purchases
+          </h2>
           <p style={{ color: "var(--muted)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
             Track your order live as the seller updates progress. Confirm &amp; rate only when you have received the item.
           </p>
@@ -544,7 +820,10 @@ export default function DashboardPage() {
       {/* My Sales Tab (Seller) */}
       {activeTab === "sales" && (
         <section className="dashboard-section">
-          <h2 className="dashboard-section-title">💼 My Sales</h2>
+          <h2 className="dashboard-section-title">
+            <Briefcase size={20} strokeWidth={2} className="tab-icon" aria-hidden="true" />
+            My Sales
+          </h2>
           <p style={{ color: "var(--muted)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
             Manage deliveries on the live tracker — the buyer sees your updates in real time.
           </p>
@@ -571,64 +850,88 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* Listings Tab */}
+      {/* Listings Tab — compact overview (no full card grids) */}
       {activeTab === "listings" && (
-
-        <>
+        <section className="dashboard-section dashboard-listings-panel">
           {listingsLoading ? (
             <div className="loading-wrap">
               <div className="spinner" />
-              <p className="dashboard-muted">Loading listings…</p>
+              <p className="dashboard-muted">Loading…</p>
+            </div>
+          ) : services.length === 0 && listings.length === 0 ? (
+            <div className="dashboard-empty dashboard-listings-empty">
+              <p>You haven&apos;t posted anything yet.</p>
+              <div className="dashboard-listings-actions">
+                <Link to="/sell" className="submit-btn">Post an ad</Link>
+                <Link to="/sell?type=service" className="dashboard-outline-btn">Offer a service</Link>
+              </div>
             </div>
           ) : (
             <>
-              <section className="dashboard-section">
-                <h2 className="dashboard-section-title">My Services</h2>
-                {services.length === 0 ? (
-                  <div className="dashboard-empty">
-                    <p>You haven't listed any professional services yet.</p>
-                    <Link to="/sell?type=service" className="submit-btn" style={{ marginTop: "1rem", display: "inline-block", width: "auto" }}>
-                      Offer a service
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="directory-grid" style={{ marginTop: 0 }}>
-                    {services.map((employee) => (
-                      <div key={employee.id} className="dashboard-boost-wrap">
-                        <EmployeeCard employee={employee} />
-                        {renderBoostBar("employee", employee)}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <section className="dashboard-section" style={{ marginTop: '3rem' }}>
-                <h2 className="dashboard-section-title">My Listings (Ads)</h2>
-                {listings.length === 0 ? (
-                  <div className="dashboard-empty">
-                    <p>You haven't posted any ads yet.</p>
-                    <Link to="/sell" className="submit-btn" style={{ marginTop: '1rem', display: 'inline-block', width: 'auto' }}>
-                      Post your first ad
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="products-grid">
-                    {listings.map((product) => (
-                      <div key={product.id} className="dashboard-boost-wrap">
-                        <ProductCard
-                          product={product}
-                          onDelete={handleDeleteListing}
-                        />
-                        {renderBoostBar("product", product)}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
+              <div className="dashboard-listings-actions dashboard-listings-actions--top">
+                <Link to="/sell" className="dashboard-outline-btn">+ Post ad</Link>
+                <Link to="/sell?type=service" className="dashboard-outline-btn">+ Offer service</Link>
+              </div>
+              <ul className="dashboard-listings-list">
+                {services.map((employee) => (
+                  <li key={`emp-${employee.id}`} className="dashboard-listing-row">
+                    <div className="dashboard-listing-row-main">
+                      <span className="dashboard-listing-type">Service</span>
+                      <Link to={`/professionals/${employee.id}`} className="dashboard-listing-title">
+                        {employee.name}
+                      </Link>
+                      <span className="dashboard-listing-meta">{employee.profession}</span>
+                    </div>
+                    <div className="dashboard-listing-row-actions">
+                      {renderBoostBar("employee", employee)}
+                    </div>
+                  </li>
+                ))}
+                {listings.map((product) => (
+                  <li key={`prod-${product.id}`} className={`dashboard-listing-row${product.is_sold ? " dashboard-listing-row--sold" : ""}`}>
+                    <div className="dashboard-listing-row-main">
+                      <span className="dashboard-listing-type">{product.is_sold ? "Sold" : "Ad"}</span>
+                      <Link to={`/listing/${product.id}`} className="dashboard-listing-title">
+                        {product.title}
+                      </Link>
+                      <span className="dashboard-listing-meta">
+                        N$&nbsp;{Number(product.price).toLocaleString("en-NA", { minimumFractionDigits: 0 })}
+                        {product.is_sold && " · Hidden from browse"}
+                      </span>
+                    </div>
+                    <div className="dashboard-listing-row-actions">
+                      {renderBoostBar("product", product)}
+                      {!product.is_sold ? (
+                        <button
+                          type="button"
+                          className="dashboard-listing-sold-btn"
+                          onClick={() => handleMarkListingSold(product.id, true)}
+                        >
+                          Mark sold
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="cat-btn dashboard-listing-relist-btn"
+                          onClick={() => handleMarkListingSold(product.id, false)}
+                        >
+                          Relist
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="dashboard-listing-delete"
+                        onClick={() => handleDeleteListing(product.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </>
           )}
-        </>
+        </section>
       )}
 
       {/* Saved Items Tab */}
@@ -695,7 +998,9 @@ export default function DashboardPage() {
                       {t.otherUser.avatar_url ? (
                         <img src={t.otherUser.avatar_url} alt="" className="thread-avatar" />
                       ) : (
-                        <div className="thread-avatar" style={{ background: 'var(--sand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>👤</div>
+                        <div className="thread-avatar admin-user-avatar-placeholder">
+                          <User size={20} strokeWidth={1.75} aria-hidden="true" />
+                        </div>
                       )}
                       <div className="thread-info">
                         <div className="thread-name-row">
@@ -781,7 +1086,9 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--muted)' }}>
-                  <span style={{ fontSize: '3rem', marginBottom: '1rem' }}>💬</span>
+                  <span className="icon-block">
+                    <MessageCircle size={48} strokeWidth={1.5} aria-hidden="true" />
+                  </span>
                   <p>Select a conversation from the sidebar to view chat logs.</p>
                 </div>
               )}
@@ -798,8 +1105,8 @@ export default function DashboardPage() {
               Edit My Profile
             </h2>
             
-            {profileSuccess && <div className="success-banner">✅ Profile updated successfully!</div>}
-            {profileError && <div className="error-banner">⚠️ {profileError}</div>}
+            {profileSuccess && <SuccessBanner>Profile updated successfully!</SuccessBanner>}
+            {profileError && <ErrorBanner>{profileError}</ErrorBanner>}
 
             <form onSubmit={handleProfileUpdate}>
               {/* Avatar section */}
@@ -807,7 +1114,9 @@ export default function DashboardPage() {
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="Avatar Preview" className="profile-avatar-preview" />
                 ) : (
-                  <div className="profile-avatar-placeholder">👤</div>
+                  <div className="profile-avatar-placeholder">
+                    <User size={40} strokeWidth={1.5} aria-hidden="true" />
+                  </div>
                 )}
                 
                 <label className="cat-btn" style={{ cursor: 'pointer', display: 'inline-block' }}>
@@ -850,7 +1159,7 @@ export default function DashboardPage() {
                   disabled={updatingProfile}
                 />
                 <span className="register-help-text" style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
-                  So our admin team can reach you about orders and listings.
+                  Required for verified seller badge and admin contact about orders.
                 </span>
               </div>
 
@@ -879,6 +1188,118 @@ export default function DashboardPage() {
                 {updatingProfile ? "Saving changes…" : "Save Changes"}
               </button>
             </form>
+
+            <div className="profile-verification-box">
+              <div className="profile-verification-head">
+                <BadgeCheck size={20} strokeWidth={2} aria-hidden="true" />
+                <h3 className="profile-verification-title">Verified seller</h3>
+              </div>
+              {isVerifiedSeller ? (
+                <p className="profile-verification-status profile-verification-status--ok">
+                  <VerifiedBadge size={16} /> Your profile is verified. Buyers see this on your listings.
+                </p>
+              ) : verificationPending ? (
+                <VerificationPendingView
+                  profile={profile}
+                  justSubmitted={verificationJustSubmitted}
+                  confirmationEmail={confirmationEmail}
+                />
+              ) : (
+                <>
+                  {verificationRejected && (
+                    <VerificationRejectedView profile={profile} />
+                  )}
+                  <form className="profile-verification-form" onSubmit={handleRequestVerification}>
+                  <p className="profile-verification-hint">
+                    {verificationRejected
+                      ? "Submit a new verification request with updated details."
+                      : "Get a trusted badge on your ads. We review your social profiles and ID by email — your ID is not stored on our servers."}
+                  </p>
+                  {!verificationRejected && (
+                  <p className="profile-verification-hint profile-verification-hint--step">
+                    Step 1: Save your phone number above, then complete the form below.
+                  </p>
+                  )}
+                  <div className="profile-verification-social-grid">
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="verify-fb">Facebook</label>
+                      <input id="verify-fb" type="text" className="form-input" placeholder="Profile URL or name"
+                        value={verifySocialFacebook} onChange={(e) => setVerifySocialFacebook(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="verify-ig">Instagram</label>
+                      <input id="verify-ig" type="text" className="form-input" placeholder="@username or URL"
+                        value={verifySocialInstagram} onChange={(e) => setVerifySocialInstagram(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="verify-tt">TikTok</label>
+                      <input id="verify-tt" type="text" className="form-input" placeholder="@username"
+                        value={verifySocialTiktok} onChange={(e) => setVerifySocialTiktok(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="verify-li">LinkedIn</label>
+                      <input id="verify-li" type="text" className="form-input" placeholder="Profile URL"
+                        value={verifySocialLinkedin} onChange={(e) => setVerifySocialLinkedin(e.target.value)} />
+                    </div>
+                  </div>
+                  <p className="register-help-text">At least one social profile is required.</p>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="verify-note">Note for our team (optional)</label>
+                    <input id="verify-note" type="text" className="form-input" placeholder="e.g. I sell as @myshop on Instagram"
+                      value={verifyNote} onChange={(e) => setVerifyNote(e.target.value)} maxLength={500} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="verify-id">ID document photo</label>
+                    <input
+                      id="verify-id"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      capture="environment"
+                      className="form-input"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        if (file && file.size > ID_PHOTO_MAX_BYTES) {
+                          setVerificationMessage({ ok: false, text: "ID photo must be 10MB or smaller." });
+                          e.target.value = "";
+                          setVerifyIdPhoto(null);
+                          return;
+                        }
+                        setVerificationMessage(null);
+                        setVerifyIdPhoto(file);
+                      }}
+                    />
+                    <span className="register-help-text">
+                      Take a clear photo of your Namibian ID or passport. Max 10MB. Sent securely to our team by email only.
+                    </span>
+                    {verifyIdPhoto && (
+                      <span className="profile-verification-file-name">{verifyIdPhoto.name}</span>
+                    )}
+                  </div>
+                  <label className="profile-verification-consent">
+                    <input
+                      type="checkbox"
+                      checked={verifyConsent}
+                      onChange={(e) => setVerifyConsent(e.target.checked)}
+                    />
+                    <span>
+                      I consent to Sell Something using my ID photo solely to verify my identity.
+                      It will not be stored in the app database.
+                    </span>
+                  </label>
+                  <button
+                    type="submit"
+                    className="submit-btn profile-verification-submit"
+                    disabled={verificationLoading || updatingProfile}
+                  >
+                    {verificationLoading ? "Submitting…" : verificationRejected ? "Resubmit for verification" : "Submit for verification"}
+                  </button>
+                  {verificationMessage && !verificationMessage.ok && (
+                    <p className="admin-mail-err">{verificationMessage.text}</p>
+                  )}
+                </form>
+                </>
+              )}
+            </div>
           </div>
         </section>
       )}

@@ -10,6 +10,7 @@ import {
 } from "../services/api";
 import { MAX_PRODUCT_IMAGES } from "../utils/productImages";
 import TermsModal from "../components/TermsModal";
+import { Camera, Package, Wrench, CheckCircle2, AlertTriangle, Coins } from "lucide-react";
 
 const AD_FEE = 25;
 
@@ -297,7 +298,7 @@ export default function SellPage() {
               className="image-upload-input"
               disabled={submitting}
             />
-            <span className="image-upload-icon">📷</span>
+            <span className="image-upload-icon"><Camera size={24} strokeWidth={2} /></span>
             <span>
               {imageItems.length === 0
                 ? "Add photos (max 5 MB each)"
@@ -351,7 +352,7 @@ export default function SellPage() {
         </span>
       </label>
 
-      {termsAccepted && <div className="terms-accepted-badge">✅ Terms accepted</div>}
+      {termsAccepted && <div className="terms-accepted-badge"><CheckCircle2 size={16} strokeWidth={2.5} style={{ marginRight: '4px', position: 'relative', top: '2px' }} /> Terms accepted</div>}
     </div>
   );
 
@@ -383,19 +384,19 @@ export default function SellPage() {
           className={`sell-type-tab ${!isService ? "active" : ""}`}
           onClick={() => { setListingType("item"); setError(null); }}
         >
-          📦 Sell an Item
+          <Package size={18} strokeWidth={2} style={{ marginRight: '6px', position: 'relative', top: '2px' }} /> Sell an Item
         </button>
         <button
           type="button"
           className={`sell-type-tab ${isService ? "active" : ""}`}
           onClick={() => { setListingType("service"); setError(null); }}
         >
-          🔧 Offer a Service
+          <Wrench size={18} strokeWidth={2} style={{ marginRight: '6px', position: 'relative', top: '2px' }} /> Offer a Service
         </button>
       </div>
 
-      {success && <div className="success-banner">✅ {successMsg}</div>}
-      {error && <div className="error-banner">⚠️ {error}</div>}
+      {success && <div className="success-banner"><CheckCircle2 size={18} strokeWidth={2.5} style={{ marginRight: '6px', position: 'relative', top: '3px' }} /> {successMsg}</div>}
+      {error && <div className="error-banner"><AlertTriangle size={18} strokeWidth={2.5} style={{ marginRight: '6px', position: 'relative', top: '3px' }} /> {error}</div>}
 
       {!isService ? (
         <form onSubmit={handleSubmitItem}>
@@ -459,7 +460,10 @@ export default function SellPage() {
 
           {priceNum > 0 && (
             <div className="fee-summary-box">
-              <div className="fee-summary-title">💰 Pricing Summary</div>
+              <div className="fee-summary-title">
+                <Coins size={18} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                Pricing Summary
+              </div>
               <div className="fee-summary-row">
                 <span>Your listing price</span>
                 <span>N$ {priceNum.toLocaleString("en-NA", { minimumFractionDigits: 2 })}</span>

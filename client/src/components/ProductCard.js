@@ -4,16 +4,21 @@ import { useAuth } from "../context/AuthContext";
 import { getProductImages } from "../utils/productImages";
 import { updateProduct } from "../services/api";
 import { isCurrentlyBoosted } from "../utils/boostHelpers";
+import SellerNameLine, { sellerDisplayName } from "./SellerNameLine";
+import { 
+  Smartphone, CarFront, Sofa, Shirt, Home, Tractor, Wrench, Package, 
+  Heart, Trash2, MapPin 
+} from "lucide-react";
 
 const CATEGORY_ICONS = {
-  Electronics: "📱",
-  Vehicles: "🚗",
-  Furniture: "🛋️",
-  Clothing: "👕",
-  Property: "🏠",
-  Agriculture: "🌾",
-  Services: "🔧",
-  Other: "📦",
+  Electronics: Smartphone,
+  Vehicles: CarFront,
+  Furniture: Sofa,
+  Clothing: Shirt,
+  Property: Home,
+  Agriculture: Tractor,
+  Services: Wrench,
+  Other: Package,
 };
 
 function formatPrice(price) {
@@ -21,7 +26,7 @@ function formatPrice(price) {
 }
 
 export default function ProductCard({ product, onDelete }) {
-  const icon = CATEGORY_ICONS[product.category] || "📦";
+  const IconComponent = CATEGORY_ICONS[product.category] || Package;
   const images = getProductImages(product);
   const cover = images[0];
 
@@ -86,11 +91,12 @@ export default function ProductCard({ product, onDelete }) {
   const sponsored = isCurrentlyBoosted(product);
 
   return (
-    <Link to={`/listing/${product.id}`} className={`product-card${sponsored ? " product-card--sponsored" : ""}`}>
+    <Link to={`/listing/${product.id}`} className={`product-card${sponsored ? " product-card--sponsored" : ""}${product.is_sold ? " product-card--sold" : ""}`}>
       {cover ? (
         <>
           <img src={cover} alt={product.title} className="card-img" />
-          {sponsored && <span className="sponsored-badge">Sponsored</span>}
+          {product.is_sold && <span className="sold-badge">Sold</span>}
+          {sponsored && !product.is_sold && <span className="sponsored-badge">Sponsored</span>}
           {images.length > 1 && (
             <span className="card-photo-count">{images.length} photos</span>
           )}
@@ -98,21 +104,19 @@ export default function ProductCard({ product, onDelete }) {
       ) : (
         <div className="card-img-placeholder">
           {sponsored && <span className="sponsored-badge">Sponsored</span>}
-          {icon}
+          <IconComponent size={64} strokeWidth={1.5} color="currentColor" />
         </div>
       )}
       <div className="card-body">
         <div className="card-header-flex">
           <span className="card-cat">{product.category}</span>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ display: "flex", gap: "0.5rem", marginLeft: "auto" }}>
             <button 
               className={`like-btn ${liked ? 'liked' : ''}`}
               onClick={handleLike}
               aria-label={liked ? "Unlike" : "Like"}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
+              <Heart size={14} strokeWidth={2.5} />
               {likes}
             </button>
             {onDelete && (
@@ -121,17 +125,15 @@ export default function ProductCard({ product, onDelete }) {
                 onClick={handleDelete}
                 aria-label="Delete listing"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  <line x1="10" y1="11" x2="10" y2="17"></line>
-                  <line x1="14" y1="11" x2="14" y2="17"></line>
-                </svg>
+                <Trash2 size={14} strokeWidth={2.5} />
               </button>
             )}
           </div>
         </div>
         <h3 className="card-title">{product.title}</h3>
+        {sellerDisplayName(product) && (
+          <SellerNameLine product={product} badgeSize={12} className="card-seller-row" />
+        )}
         {product.description && (
           <p className="card-desc">{product.description}</p>
         )}
@@ -139,10 +141,7 @@ export default function ProductCard({ product, onDelete }) {
           <span className="card-price">{formatPrice(product.price)}</span>
           {product.location && (
             <span className="card-location">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="7" r="3"/>
-              </svg>
+              <MapPin size={12} strokeWidth={2.5} />
               {product.location}
             </span>
           )}

@@ -2,15 +2,7 @@ import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import BrandLogo from "./BrandLogo";
-
-function UserIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
+import { User, Menu, X, Settings } from "lucide-react";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -48,7 +40,7 @@ export default function Navbar() {
             aria-label="My Dashboard"
             onClick={closeMenu}
           >
-            <UserIcon />
+            <User size={22} strokeWidth={2} />
           </NavLink>
         )}
 
@@ -59,20 +51,7 @@ export default function Navbar() {
           aria-label="Toggle navigation"
           aria-expanded={isOpen}
         >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            {isOpen ? (
-              <>
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </>
-            ) : (
-              <>
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </>
-            )}
-          </svg>
+          {isOpen ? <X size={28} strokeWidth={2} /> : <Menu size={28} strokeWidth={2} />}
         </button>
 
         <div className={`navbar-nav ${isOpen ? "open" : ""}`}>
@@ -98,12 +77,13 @@ export default function Navbar() {
             <div className="nav-user-menu nav-mobile-only">
               <p className="nav-user-greeting">Hi, {displayName}</p>
               <NavLink to="/dashboard" className="nav-link nav-menu-dashboard" onClick={closeMenu}>
-                <UserIcon />
+                <User size={22} strokeWidth={2} style={{marginRight: "8px"}} />
                 <span>My Dashboard</span>
               </NavLink>
               {profile?.is_admin && (
                 <NavLink to="/admin" className="nav-link nav-menu-dashboard" onClick={closeMenu}>
-                  <span>⚙️ Admin Panel</span>
+                  <Settings size={22} strokeWidth={2} style={{marginRight: "8px"}} />
+                  <span>Admin Panel</span>
                 </NavLink>
               )}
               <button
@@ -117,8 +97,8 @@ export default function Navbar() {
           )}
 
           {profile?.is_admin && (
-            <NavLink to="/admin" className="nav-link nav-admin-link" onClick={closeMenu}>
-              ⚙️ Admin Panel
+            <NavLink to="/admin" className="nav-link nav-admin-link" onClick={closeMenu} style={{display: "flex", alignItems: "center", gap: "6px"}}>
+              <Settings size={18} strokeWidth={2.5} /> Admin Panel
             </NavLink>
           )}
 

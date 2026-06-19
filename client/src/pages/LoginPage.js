@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import BrandLogo from "../components/BrandLogo";
+import { SuccessBanner, ErrorBanner } from "../components/StatusBanners";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -72,8 +73,8 @@ export default function LoginPage() {
         <p className="sell-sub">Log in to your account to manage your listings.</p>
       </div>
 
-      {success && <div className="success-banner">✅ {success}</div>}
-      {error && <div className="error-banner">⚠️ {error}</div>}
+      {success && <SuccessBanner>{success}</SuccessBanner>}
+      {error && <ErrorBanner>{error}</ErrorBanner>}
 
       <div className="sell-form-container">
         <form onSubmit={handleSubmit}>

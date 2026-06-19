@@ -22,6 +22,16 @@ const authHeaders = (token) => ({
   headers: { Authorization: `Bearer ${token}` },
 });
 
+/** Multipart uploads must not use the axios default application/json Content-Type */
+const multipartAuthConfig = (token, timeout = 60000) => ({
+  headers: { Authorization: `Bearer ${token}` },
+  timeout,
+  transformRequest: [(data, headers) => {
+    delete headers["Content-Type"];
+    return data;
+  }],
+});
+
 // ── Products ──────────────────────────────────────────────────────────────────
 export const getProducts = (params = {}) => api.get("/products", { params });
 export const getMyProducts = (email) =>
@@ -30,6 +40,8 @@ export const getProduct = (id) => api.get(`/products/${id}`);
 export const createProduct = (data, token) =>
   api.post("/products", data, authHeaders(token));
 export const updateProduct = (id, data) => api.put(`/products/${id}`, data);
+export const markProductSold = (id, sold, token) =>
+  api.put(`/products/${id}/sold`, { sold }, authHeaders(token));
 export const deleteProduct = (id) => api.delete(`/products/${id}`);
 
 // ── Image upload (via server — avoids browser storage hangs) ────────────────
@@ -70,6 +82,17 @@ export const createEmployeeReview = (id, data) => api.post(`/employees/${id}/rev
 
 // ── Profiles & Messages ────────────────────────────────────────────────────────
 export const updateProfile = (data, token) => api.put("/profiles", data, authHeaders(token));
+export const requestSellerVerification = (data, token) => {
+  const formData = new FormData();
+  formData.append("id_photo", data.idPhoto);
+  formData.append("consent", "true");
+  if (data.social_facebook) formData.append("social_facebook", data.social_facebook);
+  if (data.social_instagram) formData.append("social_instagram", data.social_instagram);
+  if (data.social_tiktok) formData.append("social_tiktok", data.social_tiktok);
+  if (data.social_linkedin) formData.append("social_linkedin", data.social_linkedin);
+  if (data.verification_note) formData.append("verification_note", data.verification_note);
+  return api.post("/profiles/request-verification", formData, multipartAuthConfig(token));
+};
 export const sendMessage = (data, token) => api.post("/messages", data, authHeaders(token));
 export const getConversations = (token) => api.get("/messages", authHeaders(token));
 export const getMessageThread = ({ productId, employeeId, otherUserId }, token) =>
@@ -102,6 +125,8 @@ export const adminUpdateOrderStatus = (orderId, status, token) =>
 export const getAdminUsers = (token) => api.get("/admin/users", authHeaders(token));
 export const getAdminUserDetail = (userId, token) =>
   api.get(`/admin/users/${userId}`, authHeaders(token));
+export const adminSetUserVerification = (userId, payload, token) =>
+  api.put(`/admin/users/${userId}/verification`, payload, authHeaders(token));
 
 // ── Boosts (sponsored ads) ────────────────────────────────────────────────────
 export const createBoost = (data, token) =>
@@ -115,6 +140,20 @@ export const getAdminBoosts = (token) =>
 
 export const adminUpdateBoostStatus = (boostId, data, token) =>
   api.put(`/boosts/${boostId}/admin-status`, data, authHeaders(token));
+
+// ── Admin: mail (Resend) ─────────────────────────────────────────────────────
+export const getAdminMailStatus = (token) =>
+  api.get("/admin/mail/status", authHeaders(token));
+export const getAdminMailPreview = (token) =>
+  api.get("/admin/mail/preview", authHeaders(token));
+export const getAdminMailLog = (token, limit = 50) =>
+  api.get("/admin/mail/log", { ...authHeaders(token), params: { limit } });
+export const sendAdminMailTest = (data, token) =>
+  api.post("/admin/mail/test", data, authHeaders(token));
+export const runAdminMailCampaign = (data, token) =>
+  api.post("/admin/mail/run", data, authHeaders(token));
+export const sendAdminMailToUser = (data, token) =>
+  api.post("/admin/mail/send-user", data, authHeaders(token));
 
 export const registerPushToken = (data, token) =>
   api.post("/push/register", {

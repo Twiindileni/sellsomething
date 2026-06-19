@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 import InfoPageLayout from "../components/InfoPageLayout";
 import { COMPANY } from "../config/site";
 import { PAYMENT } from "../config/payment";
@@ -83,7 +84,8 @@ export default function HowItWorksPage() {
           <li>Bank: <strong>{PAYMENT.bank}</strong> — {PAYMENT.bankName}{PAYMENT.bankAccount ? ` · Acc ${PAYMENT.bankAccount}` : ""}</li>
         </ul>
         <p className="info-prose warn">
-          ⚠️ Never send money to a seller&apos;s personal account. That voids buyer protection.
+          <AlertTriangle size={18} strokeWidth={2} className="banner-icon" aria-hidden="true" />
+          Never send money to a seller&apos;s personal account. That voids buyer protection.
         </p>
       </section>
 

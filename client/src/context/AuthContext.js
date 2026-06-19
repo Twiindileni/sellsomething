@@ -13,18 +13,28 @@ export function AuthProvider({ children }) {
   const profileUserIdRef = useRef(null);
 
   const fetchProfile = useCallback(async (userId) => {
-    if (!userId) return;
+    if (!userId) return null;
     setProfileLoading(true);
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email, avatar_url, is_admin, phone")
+        .select("*")
         .eq("id", userId)
         .maybeSingle();
-      if (!error) setProfile(data);
+      if (error) {
+        console.error("[AuthContext] profile fetch failed:", error.message);
+        return null;
+      }
+      setProfile(data);
+      return data;
     } finally {
       setProfileLoading(false);
     }
+  }, []);
+
+  const mergeProfile = useCallback((patch) => {
+    if (!patch) return;
+    setProfile((prev) => (prev ? { ...prev, ...patch } : patch));
   }, []);
 
   useEffect(() => {
@@ -73,11 +83,11 @@ export function AuthProvider({ children }) {
   }, [user?.id, session?.access_token]);
 
   const refreshProfile = useCallback(async () => {
-    if (user?.id) {
-      profileUserIdRef.current = null;
-      await fetchProfile(user.id);
-      profileUserIdRef.current = user.id;
-    }
+    if (!user?.id) return null;
+    profileUserIdRef.current = null;
+    const data = await fetchProfile(user.id);
+    profileUserIdRef.current = user.id;
+    return data;
   }, [user?.id, fetchProfile]);
 
   const signOut = useCallback(async () => {
@@ -98,7 +108,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, loading, profileLoading, signOut, refreshProfile }}
+      value={{ user, session, profile, loading, profileLoading, signOut, refreshProfile, mergeProfile }}
     >
       {children}
     </AuthContext.Provider>

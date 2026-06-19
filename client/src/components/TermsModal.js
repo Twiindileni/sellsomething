@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { CheckCircle2, ClipboardList } from "lucide-react";
 import { TERMS_TEXT } from "../content/legal";
 
 export default function TermsModal({ onClose, onAccept, alreadyAccepted }) {
@@ -14,7 +15,10 @@ export default function TermsModal({ onClose, onAccept, alreadyAccepted }) {
     <div className="terms-overlay" role="dialog" aria-modal="true" aria-label="Terms and Conditions">
       <div className="terms-modal">
         <div className="terms-modal-header">
-          <h2 className="terms-modal-title">📋 Terms &amp; Conditions</h2>
+          <h2 className="terms-modal-title">
+            <ClipboardList size={22} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+            Terms &amp; Conditions
+          </h2>
           <button
             type="button"
             className="terms-modal-close"
@@ -47,7 +51,8 @@ export default function TermsModal({ onClose, onAccept, alreadyAccepted }) {
             onClick={onAccept}
             disabled={!scrolledToBottom && !alreadyAccepted}
           >
-            ✅ I Accept the Terms &amp; Conditions
+            <CheckCircle2 size={18} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+            I Accept the Terms &amp; Conditions
           </button>
         </div>
       </div>

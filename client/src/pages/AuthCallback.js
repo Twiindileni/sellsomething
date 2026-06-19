@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 function getHashParams() {
@@ -66,7 +67,9 @@ export default function AuthCallback() {
     return (
       <div className="auth-callback-page">
         <div className="auth-callback-card auth-callback-success">
-          <div className="auth-callback-icon">✅</div>
+          <div className="auth-callback-icon">
+            <CheckCircle2 size={48} strokeWidth={1.75} aria-hidden="true" />
+          </div>
           <h1 className="auth-callback-title">Email confirmed!</h1>
           <p className="auth-callback-sub">
             Your account is ready. Taking you to your dashboard…
@@ -81,7 +84,9 @@ export default function AuthCallback() {
     return (
       <div className="auth-callback-page">
         <div className="auth-callback-card auth-callback-error">
-          <div className="auth-callback-icon">⚠️</div>
+          <div className="auth-callback-icon">
+            <AlertTriangle size={48} strokeWidth={1.75} aria-hidden="true" />
+          </div>
           <h1 className="auth-callback-title">Something went wrong</h1>
           <p className="auth-callback-sub">{errorMsg}</p>
           <div className="auth-callback-actions">

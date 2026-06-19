@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
+import { ErrorBanner } from "../components/StatusBanners";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -65,7 +67,9 @@ export default function ResetPasswordPage() {
     return (
       <div className="auth-callback-page">
         <div className="auth-callback-card auth-callback-error">
-          <div className="auth-callback-icon">⚠️</div>
+          <div className="auth-callback-icon">
+            <AlertTriangle size={48} strokeWidth={1.75} aria-hidden="true" />
+          </div>
           <h1 className="auth-callback-title">Link expired or invalid</h1>
           <p className="auth-callback-sub">
             Request a new password reset link and try again.
@@ -89,7 +93,7 @@ export default function ResetPasswordPage() {
       </div>
 
       <div className="sell-form-container">
-        {error && <div className="error-banner">⚠️ {error}</div>}
+        {error && <ErrorBanner>{error}</ErrorBanner>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label" htmlFor="password">New password</label>

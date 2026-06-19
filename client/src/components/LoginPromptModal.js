@@ -1,12 +1,13 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { MessageCircle } from "lucide-react";
 
 /**
  * Branded login gate — replaces browser alert() for messaging, reviews, etc.
  */
 export default function LoginPromptModal({
   onClose,
-  icon = "💬",
+  icon = <MessageCircle size={32} strokeWidth={1.5} color="currentColor" />,
   title = "Log in to continue",
   message = "Create a free account or log in to use this feature.",
   highlight,

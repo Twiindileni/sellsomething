@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { Lock } from "lucide-react";
 import { COMPANY } from "../config/site";
 import BrandLogo from "./BrandLogo";
 
@@ -44,7 +45,10 @@ export default function Footer() {
 
       <div className="site-footer-bottom">
         <span>© {year} {COMPANY.legalName}. All rights reserved.</span>
-        <span className="site-footer-trust-badge">🔒 Escrow-protected payments</span>
+        <span className="site-footer-trust-badge">
+          <Lock size={14} strokeWidth={2} aria-hidden="true" />
+          Escrow-protected payments
+        </span>
       </div>
     </footer>
   );

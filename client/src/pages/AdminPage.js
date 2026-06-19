@@ -1,5 +1,17 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  AlertTriangle,
+  Briefcase,
+  Mail,
+  MessageCircle,
+  Package,
+  ShoppingCart,
+  Smartphone,
+  Star,
+  Users,
+  User,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
   getAllOrders,
@@ -8,9 +20,66 @@ import {
   getAdminUserDetail,
   getAdminBoosts,
   adminUpdateBoostStatus,
+  adminSetUserVerification,
 } from "../services/api";
 import { BOOST_PLANS } from "../config/site";
+import { sellerPayoutMethodLabel } from "../config/payment";
 import { isEtaMissed, formatEta } from "../utils/orderHelpers";
+import StarRating from "../components/StarRating";
+import VerifiedBadge from "../components/VerifiedBadge";
+import AdminMailPanel from "../components/AdminMailPanel";
+import { VERIFICATION_REJECTION_REASONS } from "../config/verificationRejectionReasons";
+
+function socialHref(value) {
+  const v = (value || "").trim();
+  if (!v) return null;
+  if (v.startsWith("http://") || v.startsWith("https://")) return v;
+  return null;
+}
+
+function AdminVerificationDetails({ profile }) {
+  const items = [
+    { label: "Facebook", value: profile?.verification_social_facebook },
+    { label: "Instagram", value: profile?.verification_social_instagram },
+    { label: "TikTok", value: profile?.verification_social_tiktok },
+    { label: "LinkedIn", value: profile?.verification_social_linkedin },
+  ].filter((i) => i.value);
+
+  if (!profile?.verification_requested_at && !items.length) return null;
+
+  return (
+    <div className="admin-verification-details">
+      <h4 className="admin-verification-details-title">Verification submission</h4>
+      {profile?.verification_requested_at && (
+        <p className="admin-order-ref">
+          Submitted {formatDate(profile.verification_requested_at)} · ID photo in admin email (not in database)
+        </p>
+      )}
+      {items.length > 0 && (
+        <ul className="admin-verification-social-list">
+          {items.map((item) => {
+            const href = socialHref(item.value);
+            return (
+              <li key={item.label}>
+                <strong>{item.label}:</strong>{" "}
+                {href ? (
+                  <a href={href} target="_blank" rel="noopener noreferrer">{item.value}</a>
+                ) : (
+                  item.value
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {profile?.verification_note && (
+        <p className="admin-verification-note">
+          <strong>Seller note:</strong> {profile.verification_note}
+        </p>
+      )}
+    </div>
+  );
+}
 
 const STATUS_LABELS = {
   pending_payment: { label: "Awaiting Payment", color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
@@ -116,6 +185,9 @@ export default function AdminPage() {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [userDetail, setUserDetail] = useState(null);
   const [userDetailLoading, setUserDetailLoading] = useState(false);
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [rejectReasonCode, setRejectReasonCode] = useState(VERIFICATION_REJECTION_REASONS[0].id);
+  const [rejectReasonNote, setRejectReasonNote] = useState("");
   const [openThreads, setOpenThreads] = useState({});
 
   // Boosts view state
@@ -258,6 +330,50 @@ export default function AdminPage() {
     }
   }
 
+  async function handleUserVerification(userId, verified) {
+    const label = verified ? "Verify this seller?" : "Remove verified badge?";
+    if (!window.confirm(label)) return;
+    setVerificationLoading(true);
+    try {
+      const res = await adminSetUserVerification(userId, { verified }, accessToken);
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, ...res.data } : u)));
+      if (userDetail?.profile?.id === userId) {
+        setUserDetail((prev) => ({
+          ...prev,
+          profile: { ...prev.profile, ...res.data },
+        }));
+      }
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || "Could not update verification.");
+    } finally {
+      setVerificationLoading(false);
+    }
+  }
+
+  async function handleDeclineVerification(userId) {
+    if (!window.confirm("Decline this verification request? The seller will be emailed and can reapply.")) return;
+    setVerificationLoading(true);
+    try {
+      const res = await adminSetUserVerification(userId, {
+        reject: true,
+        reason_code: rejectReasonCode,
+        reason_note: rejectReasonNote.trim(),
+      }, accessToken);
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, ...res.data } : u)));
+      if (userDetail?.profile?.id === userId) {
+        setUserDetail((prev) => ({
+          ...prev,
+          profile: { ...prev.profile, ...res.data },
+        }));
+      }
+      setRejectReasonNote("");
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || "Could not decline verification.");
+    } finally {
+      setVerificationLoading(false);
+    }
+  }
+
   const stats = {
     total: orders.length,
     pending: orders.filter((o) => o.status === "pending_payment").length,
@@ -343,7 +459,25 @@ export default function AdminPage() {
               <div className="admin-order-ref">Payment ref: {order.payment_reference}</div>
             )}
             {order.payment_method && (
-              <div className="admin-order-ref">Method: {order.payment_method}</div>
+              <div className="admin-order-ref">Buyer paid via: {order.payment_method}</div>
+            )}
+            {order.seller_payout_method ? (
+              <div className={`admin-seller-payout-box ${order.status === "confirmed" ? "admin-seller-payout-box--ready" : ""}`}>
+                <div className="admin-seller-payout-label">Pay seller via</div>
+                <div className="admin-seller-payout-method">
+                  {sellerPayoutMethodLabel(order.seller_payout_method)}
+                </div>
+                <div className="admin-seller-payout-details">{order.seller_payout_details}</div>
+                {order.status === "confirmed" && (
+                  <div className="admin-seller-payout-hint">Buyer confirmed — release payout using details above</div>
+                )}
+              </div>
+            ) : (
+              ["in_delivery", "delivered", "confirmed"].includes(order.status) && (
+                <div className="admin-order-ref admin-order-ref--warn">
+                  Seller has not submitted payout details yet
+                </div>
+              )
             )}
             {order.delivery_eta && (
               <div className={`admin-order-ref ${etaMissed ? "order-eta-missed" : ""}`}>
@@ -353,7 +487,7 @@ export default function AdminPage() {
             )}
             {order.buyer_rating && (
               <div className="admin-order-ref">
-                Buyer rating: {"★".repeat(order.buyer_rating)}{"☆".repeat(5 - order.buyer_rating)}
+                Buyer rating: <StarRating value={order.buyer_rating} size={14} />
                 {order.buyer_review && <> — "{order.buyer_review}"</>}
               </div>
             )}
@@ -434,7 +568,8 @@ export default function AdminPage() {
           className={`admin-filter-tab ${view === "orders" ? "active" : ""}`}
           onClick={() => setView("orders")}
         >
-          📦 Orders
+          <Package size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
+          Orders
           {stats.pending > 0 && <span className="dashboard-tab-badge">{stats.pending}</span>}
         </button>
         <button
@@ -442,19 +577,29 @@ export default function AdminPage() {
           className={`admin-filter-tab ${view === "users" ? "active" : ""}`}
           onClick={() => { setView("users"); setSelectedUserId(null); setUserDetail(null); }}
         >
-          👥 Users
+          <Users size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
+          Users
         </button>
         <button
           type="button"
           className={`admin-filter-tab ${view === "boosts" ? "active" : ""}`}
           onClick={() => setView("boosts")}
         >
-          ⭐ Boosts
+          <Star size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
+          Boosts
           {boosts.filter((b) => b.status === "pending_payment").length > 0 && (
             <span className="dashboard-tab-badge">
               {boosts.filter((b) => b.status === "pending_payment").length}
             </span>
           )}
+        </button>
+        <button
+          type="button"
+          className={`admin-filter-tab ${view === "mail" ? "active" : ""}`}
+          onClick={() => setView("mail")}
+        >
+          <Mail size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
+          Mail
         </button>
       </div>
 
@@ -547,7 +692,8 @@ export default function AdminPage() {
               {actionRequired.length > 0 && (
                 <section className="admin-orders-section">
                   <h3 className="admin-orders-section-title attention">
-                    ⚠️ Action required ({actionRequired.length})
+                    <AlertTriangle size={18} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                    Action required ({actionRequired.length})
                   </h3>
                   <div className="admin-orders-list">
                     {actionRequired.map((order) => renderOrderCard(order))}
@@ -592,7 +738,8 @@ export default function AdminPage() {
               {boosts.filter((b) => b.status === "pending_payment").length > 0 && (
                 <section className="admin-orders-section">
                   <h3 className="admin-orders-section-title attention">
-                    ⚠️ Awaiting approval ({boosts.filter((b) => b.status === "pending_payment").length})
+                    <AlertTriangle size={18} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                    Awaiting approval ({boosts.filter((b) => b.status === "pending_payment").length})
                   </h3>
                   <div className="admin-orders-list">
                     {boosts
@@ -716,24 +863,48 @@ export default function AdminPage() {
                   {u.avatar_url ? (
                     <img src={u.avatar_url} alt="" className="admin-user-avatar" />
                   ) : (
-                    <div className="admin-user-avatar admin-user-avatar-placeholder">👤</div>
+                    <div className="admin-user-avatar admin-user-avatar-placeholder">
+                      <User size={22} strokeWidth={1.75} aria-hidden="true" />
+                    </div>
                   )}
                   <div className="admin-user-info">
                     <div className="admin-user-name">
                       {u.full_name || "(no name)"}
                       {u.is_admin && <span className="admin-user-admin-badge">ADMIN</span>}
+                      {u.is_verified_seller && <VerifiedBadge compact size={12} className="admin-user-verified" />}
+                      {u.verification_requested_at && !u.is_verified_seller && (
+                        <span className="admin-user-pending-badge">Pending verify</span>
+                      )}
+                      {u.verification_rejected_at && !u.is_verified_seller && !u.verification_requested_at && (
+                        <span className="admin-user-declined-badge">Declined</span>
+                      )}
                     </div>
                     <div className="admin-user-email">{u.email}</div>
                     {u.phone && (
-                      <div className="admin-user-phone">📱 {u.phone}</div>
+                      <div className="admin-user-phone">
+                        <Smartphone size={14} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                        {u.phone}
+                      </div>
                     )}
                     <div className="admin-user-joined">Joined {formatDate(u.created_at)}</div>
                   </div>
                   <div className="admin-user-counts">
-                    <span title="Listings">📦 {u.counts.listings}</span>
-                    <span title="Purchases">🛒 {u.counts.purchases}</span>
-                    <span title="Sales">💼 {u.counts.sales}</span>
-                    <span title="Messages">💬 {u.counts.messages}</span>
+                    <span title="Listings">
+                      <Package size={14} strokeWidth={2} className="admin-stat-icon" aria-hidden="true" />
+                      {u.counts.listings}
+                    </span>
+                    <span title="Purchases">
+                      <ShoppingCart size={14} strokeWidth={2} className="admin-stat-icon" aria-hidden="true" />
+                      {u.counts.purchases}
+                    </span>
+                    <span title="Sales">
+                      <Briefcase size={14} strokeWidth={2} className="admin-stat-icon" aria-hidden="true" />
+                      {u.counts.sales}
+                    </span>
+                    <span title="Messages">
+                      <MessageCircle size={14} strokeWidth={2} className="admin-stat-icon" aria-hidden="true" />
+                      {u.counts.messages}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -763,17 +934,92 @@ export default function AdminPage() {
                 {userDetail.profile.avatar_url ? (
                   <img src={userDetail.profile.avatar_url} alt="" className="admin-user-avatar admin-user-avatar-lg" />
                 ) : (
-                  <div className="admin-user-avatar admin-user-avatar-lg admin-user-avatar-placeholder">👤</div>
+                  <div className="admin-user-avatar admin-user-avatar-lg admin-user-avatar-placeholder">
+                    <User size={36} strokeWidth={1.5} aria-hidden="true" />
+                  </div>
                 )}
                 <div>
                   <h2 className="admin-user-detail-name">
                     {userDetail.profile.full_name || "(no name)"}
                     {userDetail.profile.is_admin && <span className="admin-user-admin-badge">ADMIN</span>}
+                    {userDetail.profile.is_verified_seller && <VerifiedBadge />}
                   </h2>
                   <div className="admin-user-email">{userDetail.profile.email}</div>
+                  {userDetail.profile.verification_requested_at && !userDetail.profile.is_verified_seller && (
+                    <div className="admin-user-pending-note">
+                      Requested seller verification {formatDate(userDetail.profile.verification_requested_at)}
+                    </div>
+                  )}
+                  {userDetail.profile.verification_rejected_at && !userDetail.profile.is_verified_seller && (
+                    <div className="admin-user-declined-note">
+                      Declined {formatDate(userDetail.profile.verification_rejected_at)}
+                      {userDetail.profile.verification_rejection_reason && (
+                        <> — {userDetail.profile.verification_rejection_reason}</>
+                      )}
+                    </div>
+                  )}
+                  <div className="admin-user-verify-actions">
+                    {!userDetail.profile.is_verified_seller ? (
+                      <>
+                        <button
+                          type="button"
+                          className="admin-action-btn"
+                          disabled={verificationLoading || !userDetail.profile.phone}
+                          onClick={() => handleUserVerification(userDetail.profile.id, true)}
+                        >
+                          {verificationLoading ? "Saving…" : "Verify seller"}
+                        </button>
+                        {userDetail.profile.verification_requested_at && (
+                          <div className="admin-verification-decline">
+                            <label className="form-label" htmlFor="decline-reason">Decline verification</label>
+                            <select
+                              id="decline-reason"
+                              className="form-input"
+                              value={rejectReasonCode}
+                              onChange={(e) => setRejectReasonCode(e.target.value)}
+                              disabled={verificationLoading}
+                            >
+                              {VERIFICATION_REJECTION_REASONS.map((r) => (
+                                <option key={r.id} value={r.id}>{r.label}</option>
+                              ))}
+                            </select>
+                            <textarea
+                              className="form-input admin-decline-note"
+                              placeholder={rejectReasonCode === "other" ? "Required: explain why verification was declined" : "Optional note to include in the email"}
+                              value={rejectReasonNote}
+                              onChange={(e) => setRejectReasonNote(e.target.value)}
+                              rows={2}
+                              maxLength={500}
+                              disabled={verificationLoading}
+                            />
+                            <button
+                              type="button"
+                              className="cat-btn admin-decline-btn"
+                              disabled={verificationLoading}
+                              onClick={() => handleDeclineVerification(userDetail.profile.id)}
+                            >
+                              {verificationLoading ? "Saving…" : "Decline & notify seller"}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className="cat-btn"
+                        disabled={verificationLoading}
+                        onClick={() => handleUserVerification(userDetail.profile.id, false)}
+                      >
+                        Remove verification
+                      </button>
+                    )}
+                    {!userDetail.profile.phone && (
+                      <span className="admin-order-ref">No phone on profile — ask user to add one first</span>
+                    )}
+                  </div>
                   {userDetail.profile.phone && (
                     <div className="admin-user-phone">
-                      📱{" "}
+                      <Smartphone size={14} strokeWidth={2} className="inline-icon" aria-hidden="true" />
                       <a href={`tel:${userDetail.profile.phone.replace(/\s/g, "")}`}>
                         {userDetail.profile.phone}
                       </a>
@@ -782,6 +1028,8 @@ export default function AdminPage() {
                   <div className="admin-user-joined">Joined {formatDate(userDetail.profile.created_at)}</div>
                 </div>
               </div>
+
+              <AdminVerificationDetails profile={userDetail.profile} />
 
               <div className="admin-stats">
                 <div className="admin-stat-card">
@@ -804,7 +1052,10 @@ export default function AdminPage() {
 
               {/* Purchases */}
               <section className="admin-user-section">
-                <h3 className="admin-user-section-title">🛒 Purchases (as buyer)</h3>
+                <h3 className="admin-user-section-title">
+                  <ShoppingCart size={18} strokeWidth={2} className="admin-section-icon" aria-hidden="true" />
+                  Purchases (as buyer)
+                </h3>
                 {userDetail.purchases.length === 0 ? (
                   <p className="admin-user-empty">No purchases.</p>
                 ) : (
@@ -814,7 +1065,10 @@ export default function AdminPage() {
 
               {/* Sales */}
               <section className="admin-user-section">
-                <h3 className="admin-user-section-title">💼 Sales (as seller)</h3>
+                <h3 className="admin-user-section-title">
+                  <Briefcase size={18} strokeWidth={2} className="admin-section-icon" aria-hidden="true" />
+                  Sales (as seller)
+                </h3>
                 {userDetail.sales.length === 0 ? (
                   <p className="admin-user-empty">No sales.</p>
                 ) : (
@@ -824,7 +1078,10 @@ export default function AdminPage() {
 
               {/* Listings */}
               <section className="admin-user-section">
-                <h3 className="admin-user-section-title">📦 Listings</h3>
+                <h3 className="admin-user-section-title">
+                  <Package size={18} strokeWidth={2} className="admin-section-icon" aria-hidden="true" />
+                  Listings
+                </h3>
                 {userDetail.listings.length === 0 ? (
                   <p className="admin-user-empty">No listings.</p>
                 ) : (
@@ -846,7 +1103,10 @@ export default function AdminPage() {
 
               {/* Conversations */}
               <section className="admin-user-section">
-                <h3 className="admin-user-section-title">💬 Conversations</h3>
+                <h3 className="admin-user-section-title">
+                  <MessageCircle size={18} strokeWidth={2} className="admin-section-icon" aria-hidden="true" />
+                  Conversations
+                </h3>
                 {userDetail.messagesAvailable === false && (
                   <div className="error-banner" style={{ marginBottom: "1rem" }}>
                     Full message access requires SUPABASE_SERVICE_ROLE_KEY on the server.
@@ -873,7 +1133,12 @@ export default function AdminPage() {
                           <div className="admin-chat-thread-title">
                             <strong>{t.otherUser.full_name || t.otherUser.email || "Unknown user"}</strong>
                             <span className="admin-mini-order-sub"> · about "{contextLabel}"</span>
-                            {flagged && <span className="admin-chat-flag">⚠️ possible off-platform deal</span>}
+                            {flagged && (
+                              <span className="admin-chat-flag">
+                                <AlertTriangle size={12} strokeWidth={2} aria-hidden="true" />
+                                possible off-platform deal
+                              </span>
+                            )}
                           </div>
                           <span className="admin-chat-thread-count">
                             {t.messages.length} message{t.messages.length !== 1 ? "s" : ""} {isOpen ? "▲" : "▼"}
@@ -894,7 +1159,12 @@ export default function AdminPage() {
                                       ? (userDetail.profile.full_name || userDetail.profile.email)
                                       : (t.otherUser.full_name || t.otherUser.email)}
                                     {" · "}{formatDateTime(m.created_at)}
-                                    {suspicious && " · ⚠️"}
+                                    {suspicious && (
+                                      <>
+                                        {" · "}
+                                        <AlertTriangle size={12} strokeWidth={2} className="inline-icon" aria-hidden="true" />
+                                      </>
+                                    )}
                                   </div>
                                   <div className="admin-chat-msg-content">{m.content}</div>
                                 </div>
@@ -910,6 +1180,11 @@ export default function AdminPage() {
             </>
           )}
         </>
+      )}
+
+      {/* ════════ MAIL VIEW ════════ */}
+      {view === "mail" && (
+        <AdminMailPanel accessToken={accessToken} />
       )}
     </div>
   );

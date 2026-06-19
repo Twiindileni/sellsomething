@@ -1,26 +1,27 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { MapPin, Lock, MessageCircle, CheckCircle2, Building2 } from "lucide-react";
 import InfoPageLayout from "../components/InfoPageLayout";
 import { COMPANY } from "../config/site";
 
 const VALUES = [
   {
-    icon: "🇳🇦",
+    icon: MapPin,
     title: "Built for Namibia",
     text: "A local marketplace connecting buyers and sellers across the country — from Windhoek to every town.",
   },
   {
-    icon: "🔒",
+    icon: Lock,
     title: "Escrow-first",
     text: "Payments are held securely until buyers confirm delivery. No more sending money to strangers and hoping for the best.",
   },
   {
-    icon: "💬",
+    icon: MessageCircle,
     title: "Transparent communication",
     text: "In-app messaging keeps a clear record. Our team can step in fairly when disputes happen.",
   },
   {
-    icon: "✅",
+    icon: CheckCircle2,
     title: "Accountable business",
     text: "We operate as a registered Close Corporation — not an anonymous website.",
   },
@@ -43,9 +44,18 @@ export default function AboutPage() {
             <p className="about-reg">{COMPANY.city}, {COMPANY.country}</p>
           </div>
           <div className="about-badges">
-            <span className="trust-badge">🏛️ Registered CC</span>
-            <span className="trust-badge">🔒 Escrow protected</span>
-            <span className="trust-badge">🇳🇦 Namibian owned</span>
+            <span className="trust-badge">
+              <Building2 size={14} strokeWidth={2} aria-hidden="true" />
+              Registered CC
+            </span>
+            <span className="trust-badge">
+              <Lock size={14} strokeWidth={2} aria-hidden="true" />
+              Escrow protected
+            </span>
+            <span className="trust-badge">
+              <MapPin size={14} strokeWidth={2} aria-hidden="true" />
+              Namibian owned
+            </span>
           </div>
         </div>
       </section>
@@ -67,13 +77,18 @@ export default function AboutPage() {
       <section className="info-section">
         <h2>Why people trust us</h2>
         <div className="about-values-grid">
-          {VALUES.map((v) => (
+          {VALUES.map((v) => {
+            const ValueIcon = v.icon;
+            return (
             <div key={v.title} className="about-value-card">
-              <span className="about-value-icon" aria-hidden="true">{v.icon}</span>
+              <span className="about-value-icon" aria-hidden="true">
+                <ValueIcon size={28} strokeWidth={1.75} />
+              </span>
               <h3>{v.title}</h3>
               <p>{v.text}</p>
             </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { SuccessBanner, ErrorBanner } from "../components/StatusBanners";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -38,9 +39,9 @@ export default function ForgotPasswordPage() {
 
       {sent ? (
         <div className="sell-form-container">
-          <div className="success-banner" style={{ marginBottom: "1.5rem" }}>
-            ✅ Check your inbox — we sent a password reset link to <strong>{email}</strong>.
-          </div>
+          <SuccessBanner style={{ marginBottom: "1.5rem" }}>
+            Check your inbox — we sent a password reset link to <strong>{email}</strong>.
+          </SuccessBanner>
           <p style={{ textAlign: "center", color: "var(--muted)", fontSize: "0.9rem", lineHeight: 1.6 }}>
             Click <strong>Reset my password</strong> in the email. You&apos;ll be taken to the website to choose a new password.
           </p>
@@ -52,7 +53,7 @@ export default function ForgotPasswordPage() {
         </div>
       ) : (
         <div className="sell-form-container">
-          {error && <div className="error-banner">⚠️ {error}</div>}
+          {error && <ErrorBanner>{error}</ErrorBanner>}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label" htmlFor="email">Email Address</label>

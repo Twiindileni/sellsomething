@@ -8,6 +8,16 @@ const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 const { createClient } = require("@supabase/supabase-js");
 const { sendPushToUser, firePush } = require("./push");
+const { isResendConfigured, getFromEmail, sendVerificationRequestEmail, sendVerificationConfirmationEmail, sendVerificationApprovedEmail, sendVerificationRejectedEmail, getVerificationAdminEmails, pickUserEmail } = require("./email");
+const { resolveRejectionReason } = require("./verificationReasons");
+const {
+  SEGMENTS,
+  EMAIL_COOLDOWN_DAYS,
+  buildAudience,
+  runReengagementCampaign,
+  sendTestEmail,
+  sendManualEmail,
+} = require("./reengagement");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +31,11 @@ const upload = multer({
   storage: multer.memoryStorage(),
 });
 
+const idPhotoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
+
 function imagesFromRow(product) {
   if (!product) return product;
   let list = [];
@@ -31,6 +46,64 @@ function imagesFromRow(product) {
   }
   list = list.slice(0, MAX_IMAGES);
   return { ...product, images: list, image: list[0] || null };
+}
+
+async function enrichProductsWithSellerTrust(rows) {
+  const products = (rows || []).map(imagesFromRow);
+  if (!products.length) return products;
+
+  const sellerIds = [...new Set(products.map((p) => p.seller_id).filter(Boolean))];
+  const emails = [...new Set(
+    products.map((p) => (p.seller_email || "").toLowerCase()).filter(Boolean)
+  )];
+
+  let profiles = [];
+  if (sellerIds.length) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, email, is_verified_seller, full_name")
+      .in("id", sellerIds);
+    profiles = profiles.concat(data || []);
+  }
+  const knownEmails = new Set(profiles.map((p) => (p.email || "").toLowerCase()));
+  const extraEmails = emails.filter((e) => !knownEmails.has(e));
+  if (extraEmails.length) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, email, is_verified_seller, full_name")
+      .in("email", extraEmails);
+    profiles = profiles.concat(data || []);
+  }
+
+  const byId = Object.fromEntries(profiles.map((p) => [p.id, p]));
+  const byEmail = Object.fromEntries(
+    profiles.map((p) => [(p.email || "").toLowerCase(), p])
+  );
+
+  return products.map((p) => {
+    const prof =
+      (p.seller_id && byId[p.seller_id])
+      || byEmail[(p.seller_email || "").toLowerCase()];
+    return {
+      ...p,
+      seller_verified: !!prof?.is_verified_seller,
+      seller_display_name: prof?.full_name?.trim() || p.seller?.trim() || null,
+    };
+  });
+}
+
+async function assertProductOwner(userClient, user, productId) {
+  const { data: product, error } = await userClient
+    .from("products")
+    .select("id, seller_id, seller_email, is_sold")
+    .eq("id", productId)
+    .single();
+  if (error || !product) return { error: "Product not found." };
+  const owns =
+    product.seller_id === user.id
+    || (user.email && (product.seller_email || "").toLowerCase() === user.email.toLowerCase());
+  if (!owns) return { error: "You can only manage your own listings." };
+  return { product };
 }
 
 function isBoostActive(row) {
@@ -57,7 +130,7 @@ function sortEmployeesBoostedFirst(rows) {
 async function expireStaleBoosts() {
   // Needs service role to bypass boosts RLS; without it, expiry happens when
   // an admin opens the Boosts tab (admin RLS policy allows the updates).
-  const db = supabaseAdmin || supabase;
+  const db = getSupabaseAdmin() || supabase;
   const now = new Date().toISOString();
   try {
     const { data: expiredBoosts } = await db
@@ -127,14 +200,36 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-  : null;
+let _supabaseAdminClient = null;
+function getSupabaseAdmin() {
+  if (_supabaseAdminClient) return _supabaseAdminClient;
+  const url = (process.env.SUPABASE_URL || "").trim();
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  if (!url || !key) return null;
+  _supabaseAdminClient = createClient(url, key);
+  return _supabaseAdminClient;
+}
 
 function supabaseForUser(accessToken) {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
   });
+}
+
+/** Account email from auth session, profile row, or Auth Admin API */
+async function resolveUserEmail(user, profile) {
+  let email = pickUserEmail(user, profile);
+  if (email) return email;
+
+  const admin = getSupabaseAdmin();
+  if (admin && user?.id) {
+    const { data, error } = await admin.auth.admin.getUserById(user.id);
+    if (!error) {
+      email = pickUserEmail(data?.user, profile);
+      if (email) return email;
+    }
+  }
+  return null;
 }
 
 async function requireAdmin(req, res) {
@@ -161,7 +256,7 @@ async function requireAdmin(req, res) {
     return null;
   }
 
-  return { userClient, db: supabaseAdmin || userClient, hasServiceRole: !!supabaseAdmin };
+  return { userClient, db: getSupabaseAdmin() || userClient, hasServiceRole: !!getSupabaseAdmin() };
 }
 
 async function fetchAllOrdersForAdmin(auth) {
@@ -310,7 +405,8 @@ app.get("/api/products/mine", async (req, res) => {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    res.json(data.map(imagesFromRow));
+    const enriched = await enrichProductsWithSellerTrust(data || []);
+    res.json(enriched);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -321,7 +417,7 @@ app.get("/api/products", async (req, res) => {
   const { search, category, minPrice, maxPrice, location, sort } = req.query;
 
   try {
-    let query = supabase.from("products").select("*");
+    let query = supabase.from("products").select("*").eq("is_sold", false);
 
     if (category && category !== "All") {
       query = query.eq("category", category);
@@ -365,7 +461,8 @@ app.get("/api/products", async (req, res) => {
     else if (sort === "price_desc") secondarySort = (a, b) => Number(b.price) - Number(a.price);
     else if (sort === "likes_desc") secondarySort = (a, b) => Number(b.likes || 0) - Number(a.likes || 0);
     const sorted = sortProductsBoostedFirst(data || [], secondarySort);
-    res.json(sorted.map(imagesFromRow));
+    const enriched = await enrichProductsWithSellerTrust(sorted);
+    res.json(enriched);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -381,7 +478,8 @@ app.get("/api/products/:id", async (req, res) => {
       .single();
 
     if (error) return res.status(404).json({ error: "Product not found" });
-    res.json(imagesFromRow(data));
+    const [enriched] = await enrichProductsWithSellerTrust([data]);
+    res.json(enriched);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -451,7 +549,40 @@ app.put("/api/products/:id", async (req, res) => {
       .single();
 
     if (error) return res.status(404).json({ error: "Product not found" });
-    res.json(imagesFromRow(data));
+    const [enriched] = await enrichProductsWithSellerTrust([data]);
+    res.json(enriched);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── PUT mark product sold / relist (seller only) ─────────────────────────────
+app.put("/api/products/:id/sold", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ error: "Log in to update your listing." });
+
+  const sold = req.body?.sold !== false;
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) return res.status(401).json({ error: "Session expired." });
+
+    const owned = await assertProductOwner(userClient, user, req.params.id);
+    if (owned.error) return res.status(owned.error === "Product not found." ? 404 : 403).json({ error: owned.error });
+
+    const { data, error } = await userClient
+      .from("products")
+      .update({
+        is_sold: sold,
+        sold_at: sold ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", req.params.id)
+      .select()
+      .single();
+    if (error) throw error;
+    const [enriched] = await enrichProductsWithSellerTrust([data]);
+    res.json(enriched);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -644,6 +775,21 @@ app.put("/api/profiles", async (req, res) => {
       updated_at: new Date().toISOString(),
     };
 
+    const { data: existingProfile } = await userClient
+      .from("profiles")
+      .select("phone, is_verified_seller")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const phoneChanged =
+      existingProfile
+      && (existingProfile.phone || "").trim() !== (updates.phone || "").trim();
+    if (phoneChanged && existingProfile.is_verified_seller) {
+      updates.is_verified_seller = false;
+      updates.phone_verified_at = null;
+      updates.verification_requested_at = null;
+    }
+
     // Must use userClient so RLS sees auth.uid(); anon client updates 0 rows → .single() error
     let { data, error } = await userClient
       .from("profiles")
@@ -673,6 +819,182 @@ app.put("/api/profiles", async (req, res) => {
     }
     res.json(data);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/profiles/request-verification", (req, res, next) => {
+  idPhotoUpload.single("id_photo")(req, res, (err) => {
+    if (err) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({ error: "ID photo must be 10MB or smaller." });
+      }
+      return res.status(400).json({ error: err.message || "Could not read ID photo upload." });
+    }
+    next();
+  });
+}, async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ error: "Log in to request verification." });
+
+  try {
+    if (!isResendConfigured()) {
+      return res.status(503).json({ error: "Email service is not configured. Try again later." });
+    }
+
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) return res.status(401).json({ error: "Session expired." });
+
+    const { data: profile, error: profileErr } = await userClient
+      .from("profiles")
+      .select("id, full_name, email, phone, is_verified_seller, verification_requested_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileErr) throw profileErr;
+    if (!profile?.phone?.trim()) {
+      return res.status(400).json({
+        error: "Add your cellphone number in Profile Settings before requesting verification.",
+      });
+    }
+    if (profile.is_verified_seller) {
+      return res.json({ ok: true, already_verified: true });
+    }
+    if (profile.verification_requested_at) {
+      return res.status(400).json({
+        error: "You already have a pending verification request. Our team will review it shortly.",
+      });
+    }
+
+    const consent = req.body?.consent === "true" || req.body?.consent === true;
+    if (!consent) {
+      return res.status(400).json({ error: "Please confirm consent to use your ID for verification only." });
+    }
+
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: "Please upload a photo of your ID document." });
+    }
+    if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
+      return res.status(400).json({ error: "ID photo must be JPEG, PNG, or WebP." });
+    }
+
+    const trimSocial = (v) => (v || "").trim().slice(0, 200) || null;
+    const social = {
+      facebook: trimSocial(req.body?.social_facebook),
+      instagram: trimSocial(req.body?.social_instagram),
+      tiktok: trimSocial(req.body?.social_tiktok),
+      linkedin: trimSocial(req.body?.social_linkedin),
+    };
+    const hasSocial = Object.values(social).some(Boolean);
+    if (!hasSocial) {
+      return res.status(400).json({
+        error: "Add at least one social media profile so our team can verify you.",
+      });
+    }
+
+    const note = (req.body?.verification_note || "").trim().slice(0, 500) || null;
+
+    const userEmail = await resolveUserEmail(user, profile);
+    if (!userEmail) {
+      return res.status(400).json({
+        error: "We could not find an email on your account. Log out and back in, or contact support.",
+      });
+    }
+
+    const fullProfile = {
+      ...profile,
+      full_name: profile.full_name || user.user_metadata?.full_name || "",
+      email: userEmail,
+    };
+
+    // Keep profiles.email in sync with the auth account email
+    if (!(profile.email || "").trim().includes("@")) {
+      const admin = getSupabaseAdmin();
+      if (admin) {
+        await admin.from("profiles").update({ email: userEmail, updated_at: new Date().toISOString() }).eq("id", user.id);
+      }
+    }
+
+    let resendResult;
+    try {
+      resendResult = await sendVerificationRequestEmail({
+        profile: fullProfile,
+        social,
+        note,
+        idFile: file,
+      });
+    } catch (adminMailErr) {
+      console.error("[verification] admin review email failed:", adminMailErr.message);
+      return res.status(502).json({
+        error: "Could not send your verification to our team. Please try again in a few minutes or contact support.",
+      });
+    }
+
+    let confirmationResult = null;
+    try {
+      confirmationResult = await sendVerificationConfirmationEmail({
+        profile: fullProfile,
+        to: userEmail,
+      });
+    } catch (confirmErr) {
+      console.error("[verification] confirmation email to user failed:", confirmErr.message);
+      return res.status(502).json({
+        error: `Verification was received by our team, but we could not email you at ${userEmail}. Check spam or contact support.`,
+      });
+    }
+
+    console.log(
+      `[verification] ID email → admin (${getVerificationAdminEmails().join(", ")}); confirmation → ${userEmail} resend=${resendResult?.id || "ok"}`
+    );
+
+    const { data, error } = await userClient
+      .from("profiles")
+      .update({
+        verification_requested_at: new Date().toISOString(),
+        verification_rejected_at: null,
+        verification_rejection_code: null,
+        verification_rejection_reason: null,
+        verification_social_facebook: social.facebook,
+        verification_social_instagram: social.instagram,
+        verification_social_tiktok: social.tiktok,
+        verification_social_linkedin: social.linkedin,
+        verification_note: note,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id)
+      .select()
+      .single();
+
+    let savedProfile = data;
+    if (error) {
+      console.warn("[verification] full profile update failed, retrying minimal:", error.message);
+      const { data: minimal, error: minErr } = await userClient
+        .from("profiles")
+        .update({
+          verification_requested_at: new Date().toISOString(),
+          verification_rejected_at: null,
+          verification_rejection_code: null,
+          verification_rejection_reason: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id)
+        .select()
+        .single();
+      if (minErr) throw minErr;
+      savedProfile = minimal;
+    }
+
+    res.json({
+      ok: true,
+      profile: savedProfile,
+      userEmail,
+      confirmationSent: true,
+      resendId: resendResult?.id || null,
+      confirmationResendId: confirmationResult?.id || null,
+    });
+  } catch (err) {
+    console.error("[verification] failed:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -725,7 +1047,7 @@ app.get("/api/push/register", async (req, res) => {
     const userClient = supabaseForUser(token);
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) return res.status(401).json({ error: "Session expired." });
-    const db = supabaseAdmin || userClient;
+    const db = getSupabaseAdmin() || userClient;
     const { data, error } = await db.from("push_tokens").select("id, platform, device_label, created_at, updated_at").eq("user_id", user.id);
     if (error) throw error;
     res.json({ user_id: user.id, tokens: data || [], firebase_ready: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON });
@@ -762,7 +1084,7 @@ app.delete("/api/push/register", async (req, res) => {
 });
 
 async function notifyNewMessage(senderId, receiverId, preview) {
-  const db = supabaseAdmin || supabase;
+  const db = getSupabaseAdmin() || supabase;
   const { data: sender } = await db
     .from("profiles")
     .select("full_name, email")
@@ -782,7 +1104,7 @@ async function notifyOrderUpdate(order, { title, body, targetUserId, url }) {
     console.warn("[push] notifyOrderUpdate called without targetUserId, skipping");
     return;
   }
-  const db = supabaseAdmin || supabase;
+  const db = getSupabaseAdmin() || supabase;
   console.log(`[push] notifyOrderUpdate → user=${targetUserId} title="${title}"`);
   firePush(sendPushToUser(db, targetUserId, {
     title,
@@ -998,6 +1320,15 @@ app.post("/api/orders", async (req, res) => {
       resolvedSellerEmail = seller_email;
     }
 
+    const { data: listing } = await supabase
+      .from("products")
+      .select("id, is_sold, title")
+      .eq("id", product_id)
+      .maybeSingle();
+    if (listing?.is_sold) {
+      return res.status(400).json({ error: "This item has already been sold." });
+    }
+
     const { data, error } = await userClient.from("orders").insert([{
       product_id,
       buyer_id: user.id,
@@ -1072,6 +1403,19 @@ app.get("/api/orders/mine", async (req, res) => {
   }
 });
 
+const SELLER_PAYOUT_METHOD_IDS = ["pay_to_cell", "easywallet", "blue_wallet", "bank_eft"];
+
+function validateSellerPayout(method, details) {
+  if (!method || !SELLER_PAYOUT_METHOD_IDS.includes(method)) {
+    return "Please select how you want to receive your payout.";
+  }
+  const trimmed = (details || "").trim();
+  if (trimmed.length < 5) {
+    return "Please enter your payout details (cell number or bank account).";
+  }
+  return null;
+}
+
 function parseFutureEta(value) {
   if (!value) return null;
   const date = new Date(value);
@@ -1103,6 +1447,8 @@ app.put("/api/orders/:id/status", async (req, res) => {
     buyer_satisfaction_note,
     buyer_rating,
     buyer_review,
+    seller_payout_method,
+    seller_payout_details,
   } = req.body;
 
   try {
@@ -1185,6 +1531,32 @@ app.put("/api/orders/:id/status", async (req, res) => {
       return res.json(data);
     }
 
+    // Seller sets or updates how admin should pay them (required before / during delivery)
+    if (action === "update_seller_payout") {
+      if (!isSeller) {
+        return res.status(403).json({ error: "Only the seller can set payout details." });
+      }
+      if (!["payment_received", "in_delivery", "delivered", "confirmed"].includes(order.status)) {
+        return res.status(400).json({ error: "Payout details cannot be changed for this order." });
+      }
+      const payoutErr = validateSellerPayout(seller_payout_method, seller_payout_details);
+      if (payoutErr) return res.status(400).json({ error: payoutErr });
+
+      const { data, error } = await userClient
+        .from("orders")
+        .update({
+          seller_payout_method,
+          seller_payout_details: seller_payout_details.trim(),
+          seller_payout_submitted_at: new Date(),
+          updated_at: new Date(),
+        })
+        .eq("id", req.params.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return res.json(data);
+    }
+
     const allowedBuyerStatuses = ["confirmed", "disputed"];
     const allowedSellerStatuses = ["in_delivery", "delivered"];
 
@@ -1211,8 +1583,19 @@ app.put("/api/orders/:id/status", async (req, res) => {
           error: "You must set a delivery ETA (date & time) before starting delivery.",
         });
       }
+      const payoutMethod = seller_payout_method || order.seller_payout_method;
+      const payoutDetails = seller_payout_details?.trim() || order.seller_payout_details;
+      const payoutErr = validateSellerPayout(payoutMethod, payoutDetails);
+      if (payoutErr) {
+        return res.status(400).json({
+          error: `${payoutErr} Admin needs this to pay you after the buyer confirms.`,
+        });
+      }
       updateData.delivery_eta = eta;
       updateData.in_delivery_at = new Date();
+      updateData.seller_payout_method = payoutMethod;
+      updateData.seller_payout_details = payoutDetails;
+      updateData.seller_payout_submitted_at = order.seller_payout_submitted_at || new Date();
       if (delivery_eta_note?.trim()) {
         updateData.delivery_eta_note = delivery_eta_note.trim();
       }
@@ -1403,7 +1786,7 @@ app.get("/api/admin/users", async (req, res) => {
     const db = auth.db;
 
     const [profilesRes, productsRes, messagesRes] = await Promise.all([
-      db.from("profiles").select("id, full_name, email, avatar_url, is_admin, phone, created_at"),
+      db.from("profiles").select("id, full_name, email, avatar_url, is_admin, phone, created_at, is_verified_seller, verification_requested_at, verification_rejected_at, verification_rejection_code, verification_rejection_reason, verification_social_facebook, verification_social_instagram, verification_social_tiktok, verification_social_linkedin, verification_note"),
       db.from("products").select("id, seller_id, seller_email"),
       db.from("messages").select("sender_id, receiver_id"),
     ]);
@@ -1547,6 +1930,110 @@ app.get("/api/admin/users/:id", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/admin/users/:id/verification", async (req, res) => {
+  try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+
+    const isReject = !!req.body?.reject;
+    const verified = !!req.body?.verified;
+
+    const { data: existing, error: loadErr } = await auth.db
+      .from("profiles")
+      .select("id, full_name, email, phone, is_verified_seller, verification_requested_at")
+      .eq("id", req.params.id)
+      .maybeSingle();
+    if (loadErr) throw loadErr;
+    if (!existing) return res.status(404).json({ error: "User not found." });
+
+    if (isReject) {
+      if (existing.is_verified_seller) {
+        return res.status(400).json({ error: "Cannot decline — user is already verified." });
+      }
+      if (!existing.verification_requested_at) {
+        return res.status(400).json({ error: "No pending verification request to decline." });
+      }
+
+      const reasonText = resolveRejectionReason(req.body?.reason_code, req.body?.reason_note);
+      const updates = {
+        is_verified_seller: false,
+        phone_verified_at: null,
+        verification_requested_at: null,
+        verification_rejected_at: new Date().toISOString(),
+        verification_rejection_code: (req.body?.reason_code || "").trim(),
+        verification_rejection_reason: reasonText,
+        verification_social_facebook: null,
+        verification_social_instagram: null,
+        verification_social_tiktok: null,
+        verification_social_linkedin: null,
+        verification_note: null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await auth.db
+        .from("profiles")
+        .update(updates)
+        .eq("id", req.params.id)
+        .select()
+        .single();
+      if (error) throw error;
+
+      if (isResendConfigured()) {
+        const userEmail = await resolveUserEmail({ id: req.params.id, email: data.email }, data);
+        if (userEmail) {
+          try {
+            await sendVerificationRejectedEmail({ profile: data, to: userEmail, reason: reasonText });
+            console.log(`[verification] declined email sent to ${userEmail}`);
+          } catch (mailErr) {
+            console.warn("[verification] declined email failed:", mailErr.message);
+          }
+        }
+      }
+
+      return res.json(data);
+    }
+
+    const updates = {
+      is_verified_seller: verified,
+      phone_verified_at: verified ? new Date().toISOString() : null,
+      verification_requested_at: null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (verified) {
+      updates.verification_rejected_at = null;
+      updates.verification_rejection_code = null;
+      updates.verification_rejection_reason = null;
+    }
+
+    const { data, error } = await auth.db
+      .from("profiles")
+      .update(updates)
+      .eq("id", req.params.id)
+      .select()
+      .single();
+    if (error) throw error;
+
+    if (verified && isResendConfigured()) {
+      const userEmail = await resolveUserEmail({ id: req.params.id, email: data.email }, data);
+      if (userEmail) {
+        try {
+          await sendVerificationApprovedEmail({ profile: data, to: userEmail });
+          console.log(`[verification] approved email sent to ${userEmail}`);
+        } catch (mailErr) {
+          console.warn("[verification] approved email failed:", mailErr.message);
+        }
+      }
+    }
+
+    res.json(data);
+  } catch (err) {
+    const msg = err.message || "Server error";
+    const isClientError = /decline reason|Invalid decline|pending verification|already verified|not found/i.test(msg);
+    res.status(isClientError ? 400 : 500).json({ error: msg });
   }
 });
 
@@ -1761,6 +2248,184 @@ app.put("/api/boosts/:id/admin-status", async (req, res) => {
     }
 
     res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── ADMIN: MAIL (Resend re-engagement) ──────────────────────────────────────
+
+function requireCronSecret(req, res) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    res.status(503).json({ error: "CRON_SECRET is not configured on the server." });
+    return false;
+  }
+  const bearer = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  const header = req.headers["x-cron-secret"];
+  if (bearer === secret || header === secret) return true;
+  res.status(401).json({ error: "Unauthorized cron request." });
+  return false;
+}
+
+app.get("/api/admin/mail/status", async (req, res) => {
+  try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+    res.json({
+      resendConfigured: isResendConfigured(),
+      fromEmail: getFromEmail(),
+      cooldownDays: EMAIL_COOLDOWN_DAYS,
+      segments: Object.fromEntries(
+        Object.entries(SEGMENTS).map(([k, v]) => [k, { label: v.label, description: v.description }])
+      ),
+      manualLabel: "Manual",
+      serviceRole: !!getSupabaseAdmin(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/admin/mail/preview", async (req, res) => {
+  try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+    if (!getSupabaseAdmin()) {
+      return res.status(503).json({
+        error: "SUPABASE_SERVICE_ROLE_KEY is required for mail preview.",
+      });
+    }
+    const { segments, skipped } = await buildAudience(getSupabaseAdmin());
+    res.json({
+      segmentCounts: Object.fromEntries(
+        Object.entries(segments).map(([k, v]) => [k, v.length])
+      ),
+      skipped,
+      samples: Object.fromEntries(
+        Object.entries(segments).map(([k, v]) => [
+          k,
+          v.slice(0, 5).map((x) => ({
+            email: x.profile.email,
+            name: x.profile.full_name,
+          })),
+        ])
+      ),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/admin/mail/log", async (req, res) => {
+  try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+    const db = auth.db;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    const { data, error } = await db
+      .from("email_campaign_log")
+      .select("id, user_id, email, segment, subject, resend_id, status, error_message, created_at")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) {
+      if (error.code === "42P01") {
+        return res.status(503).json({
+          error: "Run supabase/email_campaign_migration.sql in Supabase SQL Editor first.",
+        });
+      }
+      throw error;
+    }
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/admin/mail/test", async (req, res) => {
+  try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+    if (!isResendConfigured()) {
+      return res.status(503).json({ error: "RESEND_API_KEY is not configured." });
+    }
+    const segment = req.body?.segment || "never_posted";
+    const { data: { user } } = await auth.userClient.auth.getUser();
+    const to = req.body?.email || user?.email;
+    if (!to) return res.status(400).json({ error: "No email address for test." });
+    const result = await sendTestEmail(to, segment);
+    res.json({ ok: true, to, resendId: result.id || null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/admin/mail/run", async (req, res) => {
+  try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+    if (!isResendConfigured()) {
+      return res.status(503).json({ error: "RESEND_API_KEY is not configured." });
+    }
+    const dryRun = !!req.body?.dryRun;
+    const limit = req.body?.limit ? parseInt(req.body.limit, 10) : null;
+    const segment = req.body?.segment || null;
+    const result = await runReengagementCampaign(getSupabaseAdmin(), {
+      dryRun,
+      limit: limit || null,
+      segmentFilter: segment,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/admin/mail/send-user", async (req, res) => {
+  try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+    if (!isResendConfigured()) {
+      return res.status(503).json({ error: "RESEND_API_KEY is not configured." });
+    }
+    const db = getSupabaseAdmin();
+    if (!db) {
+      return res.status(503).json({ error: "SUPABASE_SERVICE_ROLE_KEY is required." });
+    }
+    const { user_id, email, subject, message } = req.body || {};
+    const result = await sendManualEmail(db, {
+      userId: user_id || null,
+      email: email || null,
+      subject,
+      message,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/cron/reengagement", async (req, res) => {
+  if (!requireCronSecret(req, res)) return;
+  try {
+    if (!isResendConfigured()) {
+      return res.status(503).json({ error: "RESEND_API_KEY is not configured." });
+    }
+    const result = await runReengagementCampaign(getSupabaseAdmin(), { dryRun: false });
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/cron/reengagement", async (req, res) => {
+  if (!requireCronSecret(req, res)) return;
+  try {
+    if (!isResendConfigured()) {
+      return res.status(503).json({ error: "RESEND_API_KEY is not configured." });
+    }
+    const result = await runReengagementCampaign(getSupabaseAdmin(), { dryRun: false });
+    res.json({ ok: true, ...result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
