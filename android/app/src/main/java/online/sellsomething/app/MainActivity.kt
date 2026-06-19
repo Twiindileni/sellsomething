@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.View
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -22,7 +23,12 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,12 +49,29 @@ class MainActivity : AppCompatActivity() {
     private lateinit var offlineView: LinearLayout
 
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
+    private var cameraImageUri: Uri? = null
 
     private val fileChooserLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            val uris = WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+            val uris: Array<Uri>? = when {
+                result.data?.data != null -> {
+                    // Gallery / file picker returned a URI
+                    arrayOf(result.data!!.data!!)
+                }
+                result.data?.clipData != null -> {
+                    // Multiple files selected
+                    val clip = result.data!!.clipData!!
+                    Array(clip.itemCount) { clip.getItemAt(it).uri }
+                }
+                cameraImageUri != null && result.resultCode == RESULT_OK -> {
+                    // Camera returned — image is at cameraImageUri
+                    arrayOf(cameraImageUri!!)
+                }
+                else -> WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+            }
             filePathCallback?.onReceiveValue(uris)
             filePathCallback = null
+            cameraImageUri = null
         }
 
     private val notificationPermissionLauncher =
@@ -76,7 +99,8 @@ class MainActivity : AppCompatActivity() {
             loadsImagesAutomatically = true
             mediaPlaybackRequiresUserGesture = true
             allowFileAccess = false
-            allowContentAccess = false
+            // Required for camera FileProvider content:// URIs returned to WebView
+            allowContentAccess = true
         }
 
         webView.webViewClient = object : WebViewClient() {
@@ -122,11 +146,44 @@ class MainActivity : AppCompatActivity() {
             ): Boolean {
                 filePathCallback?.onReceiveValue(null)
                 filePathCallback = callback
+
+                val acceptTypes = params.acceptTypes.joinToString(",")
+                val wantsImage = acceptTypes.contains("image") || acceptTypes.isBlank()
+                val captureEnabled = params.isCaptureEnabled
+
                 return try {
-                    fileChooserLauncher.launch(params.createIntent())
+                    if (wantsImage || captureEnabled) {
+                        // Build camera intent via FileProvider (required for Android 7+)
+                        val photoFile = createTempImageFile()
+                        val photoUri = FileProvider.getUriForFile(
+                            this@MainActivity,
+                            "${applicationContext.packageName}.fileprovider",
+                            photoFile,
+                        )
+                        cameraImageUri = photoUri
+
+                        val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                            putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
+                            addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                        }
+
+                        // Gallery / file picker fallback
+                        val galleryIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                            type = "image/*"
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                        }
+
+                        val chooser = Intent.createChooser(galleryIntent, "Select or take photo").apply {
+                            putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cameraIntent))
+                        }
+                        fileChooserLauncher.launch(chooser)
+                    } else {
+                        fileChooserLauncher.launch(params.createIntent())
+                    }
                     true
                 } catch (e: ActivityNotFoundException) {
                     filePathCallback = null
+                    cameraImageUri = null
                     false
                 }
             }
@@ -242,6 +299,12 @@ class MainActivity : AppCompatActivity() {
             """.trimIndent(),
             null,
         )
+    }
+
+    private fun createTempImageFile(): File {
+        val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val dir = File(cacheDir, "captured_images").apply { mkdirs() }
+        return File(dir, "IMG_$stamp.jpg")
     }
 
     private fun openExternal(uri: Uri) {
