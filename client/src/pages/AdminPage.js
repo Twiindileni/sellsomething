@@ -12,6 +12,7 @@ import {
   Users,
   User,
   Bell,
+  RotateCcw,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -30,6 +31,7 @@ import StarRating from "../components/StarRating";
 import VerifiedBadge from "../components/VerifiedBadge";
 import AdminMailPanel from "../components/AdminMailPanel";
 import AdminNotificationPanel from "../components/AdminNotificationPanel";
+import "./AdminDashboard.css";
 import { VERIFICATION_REJECTION_REASONS } from "../config/verificationRejectionReasons";
 
 function socialHref(value) {
@@ -431,104 +433,128 @@ export default function AdminPage() {
     );
   });
 
-  function renderOrderCard(order) {
+    function renderOrderRow(order) {
     const actions = ADMIN_ACTIONS[order.status] || [];
     const needsAttention = order.status === "pending_payment";
     const etaMissed = isEtaMissed(order);
+    
+    // Determine badge class
+    let badgeClass = "neutral";
+    if (order.status === "pending_payment") badgeClass = "pending";
+    if (order.status === "payment_received" || order.status === "in_delivery") badgeClass = "active";
+    if (order.status === "delivered" || order.status === "confirmed" || order.status === "completed") badgeClass = "success";
+    if (order.status === "disputed") badgeClass = "danger";
+
     return (
-      <div
-        key={order.id}
-        className={`admin-order-card ${order.status === "disputed" ? "disputed" : ""} ${needsAttention || etaMissed ? "needs-attention" : ""}`}
-      >
-        <div className="admin-order-top">
-          <div className="admin-order-info">
-            <div className="admin-order-product">{order.product_title || "Unknown Product"}</div>
-            <div className="admin-order-meta">
-              <span>Buyer: <strong>{order.buyer_email || "—"}</strong></span>
-              <span>Seller: <strong>{order.seller_email || "—"}</strong></span>
-              <span>{formatDate(order.created_at)}</span>
-            </div>
-            <div className="admin-order-meta" style={{ fontSize: "0.8rem", opacity: 0.7 }}>
-              ID: {order.id}
-            </div>
-            {order.dispute_reason && (
-              <div className="admin-dispute-reason">Dispute: {order.dispute_reason}</div>
-            )}
-            {order.shipping_location && (
-              <div className="admin-order-ref">Ship to: {order.shipping_location}</div>
-            )}
-            {order.payment_reference && (
-              <div className="admin-order-ref">Payment ref: {order.payment_reference}</div>
-            )}
-            {order.payment_method && (
-              <div className="admin-order-ref">Buyer paid via: {order.payment_method}</div>
-            )}
-            {order.seller_payout_method ? (
-              <div className={`admin-seller-payout-box ${order.status === "confirmed" ? "admin-seller-payout-box--ready" : ""}`}>
-                <div className="admin-seller-payout-label">Pay seller via</div>
-                <div className="admin-seller-payout-method">
-                  {sellerPayoutMethodLabel(order.seller_payout_method)}
-                </div>
-                <div className="admin-seller-payout-details">{order.seller_payout_details}</div>
-                {order.status === "confirmed" && (
-                  <div className="admin-seller-payout-hint">Buyer confirmed — release payout using details above</div>
-                )}
-              </div>
-            ) : (
-              ["in_delivery", "delivered", "confirmed"].includes(order.status) && (
-                <div className="admin-order-ref admin-order-ref--warn">
-                  Seller has not submitted payout details yet
-                </div>
-              )
-            )}
-            {order.delivery_eta && (
-              <div className={`admin-order-ref ${etaMissed ? "order-eta-missed" : ""}`}>
-                Delivery ETA: {formatEta(order.delivery_eta)}
-                {etaMissed && " — MISSED"}
-              </div>
-            )}
-            {order.buyer_rating && (
-              <div className="admin-order-ref">
-                Buyer rating: <StarRating value={order.buyer_rating} size={14} />
-                {order.buyer_review && <> — "{order.buyer_review}"</>}
-              </div>
-            )}
-          </div>
-          <div className="admin-order-right">
-            <div className="admin-order-amount">{formatPrice(order.amount)}</div>
-            <StatusBadge status={order.status} />
-          </div>
-        </div>
+      <tr key={order.id} className={needsAttention || etaMissed ? "needs-attention" : ""}>
+        <td>#{order.id.slice(0, 8)}</td>
+        <td>
+          <div style={{ fontWeight: 700, color: '#2b3674' }}>{order.product_title || "Unknown"}</div>
+          {order.shipping_location && <div style={{ fontSize: 12, color: '#a3aed1' }}>{order.shipping_location}</div>}
+        </td>
+        <td>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>B: {order.buyer_email || "-"}</div>
+          <div style={{ fontSize: 13, color: '#a3aed1' }}>S: {order.seller_email || "-"}</div>
+        </td>
+        <td>{formatDate(order.created_at)}</td>
+        <td style={{ fontWeight: 800 }}>{formatPrice(order.amount)}</td>
+        <td>
+          <span className={`admin-badge ${badgeClass}`}>
+            {STATUS_LABELS[order.status]?.label || order.status}
+          </span>
+          {etaMissed && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4, fontWeight: 'bold' }}>ETA Missed</div>}
+        </td>
+        <td>
+          {actions.length > 0 ? (
+            <select 
+              className="admin-action-select"
+              value=""
+              onChange={(e) => {
+                if(e.target.value) handleAction(order.id, e.target.value);
+              }}
+              disabled={actionLoading[order.id]}
+            >
+              <option value="">Action...</option>
+              {actions.map(a => (
+                <option key={a.next} value={a.next}>{a.label}</option>
+              ))}
+            </select>
+          ) : (
+            <span style={{color: '#a3aed1', fontSize: 12}}>No action</span>
+          )}
+        </td>
+      </tr>
+    );
+  }
 
-        {needsAttention && (
-          <div className="order-pending-note">
-            Buyer and seller are waiting for you to confirm this payment was received.
+  function renderUserRow(u) {
+    return (
+      <tr key={u.id}>
+        <td>
+          <div className="admin-user-cell">
+            <div className="admin-user-avatar">
+              <User size={18} />
+            </div>
+            <div className="admin-user-details">
+              <span className="admin-user-name">{u.full_name || "No Name"}</span>
+              <span className="admin-user-sub">{u.email}</span>
+            </div>
           </div>
-        )}
+        </td>
+        <td>{u.phone || "-"}</td>
+        <td>{formatDate(u.created_at)}</td>
+        <td>
+          {u.is_verified_seller ? (
+            <span className="admin-badge success">Verified</span>
+          ) : u.verification_requested_at && !u.verification_rejected_at ? (
+            <span className="admin-badge pending">Pending Req</span>
+          ) : (
+            <span className="admin-badge neutral">Unverified</span>
+          )}
+        </td>
+        <td>
+          <button className="admin-row-action" onClick={() => {
+            setSelectedUserId(u.id);
+          }}>
+            View Details
+          </button>
+        </td>
+      </tr>
+    );
+  }
 
-        {actions.length > 0 && (
-          <div className="admin-order-actions">
-            {actions.map((action) => (
-              <button
-                key={action.next}
-                type="button"
-                className="admin-action-btn"
-                onClick={() => handleAction(order.id, action.next)}
-                disabled={actionLoading[order.id]}
-              >
-                {actionLoading[order.id] ? "Updating…" : action.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+  function renderBoostRow(b) {
+    return (
+      <tr key={b.id}>
+        <td>#{b.id.slice(0, 8)}</td>
+        <td>{b.product_title || b.product_id}</td>
+        <td>{b.seller_email}</td>
+        <td>{BOOST_PLANS[b.plan_id]?.label || b.plan_id}</td>
+        <td>
+          <span className={`admin-badge ${b.status === 'pending_payment' ? 'pending' : (b.status === 'active' ? 'success' : 'neutral')}`}>
+            {b.status}
+          </span>
+        </td>
+        <td>
+          {b.status === "pending_payment" && (
+            <button className="admin-row-action" onClick={() => handleBoostAction(b.id, "active")} disabled={actionLoading[b.id]}>
+              {actionLoading[b.id] ? "..." : "Approve"}
+            </button>
+          )}
+          {b.status === "active" && (
+             <button className="admin-row-action" style={{background: '#ef4444'}} onClick={() => handleBoostAction(b.id, "ended")} disabled={actionLoading[b.id]}>
+               End
+             </button>
+          )}
+        </td>
+      </tr>
     );
   }
 
   if (!authReady) {
     return (
       <div className="dashboard-page">
-        <div className="loading-wrap"><div className="spinner" /> Loading admin…</div>
+        <div className="loading-wrap"><div className="spinner" /> Loading admin...</div>
       </div>
     );
   }
@@ -536,671 +562,292 @@ export default function AdminPage() {
   if (!isAdmin) return null;
 
   return (
-    <div className="admin-page">
-      <div className="admin-header">
-        <div>
-          <h1 className="admin-title">Admin Dashboard</h1>
-          <p className="admin-sub">
-            Confirm buyer payments, release seller payouts, handle disputes, and review users.
-            {stats.pending > 0 && (
-              <strong style={{ color: "var(--accent)", marginLeft: "0.5rem" }}>
-                {stats.pending} order{stats.pending !== 1 ? "s" : ""} awaiting payment confirmation
-              </strong>
-            )}
-          </p>
-        </div>
-        <button
-          className="admin-refresh-btn"
-          onClick={() => {
-            if (view === "orders") loadOrders();
-            else if (view === "boosts") loadBoosts();
-            else if (selectedUserId) loadUserDetail(selectedUserId);
-            else loadUsers();
-          }}
-          disabled={loadingOrders || usersLoading || userDetailLoading || boostsLoading}
-        >
-          {loadingOrders || usersLoading || userDetailLoading || boostsLoading ? "Loading…" : "Refresh"}
-        </button>
-      </div>
-
-      {/* View switcher */}
-      <div className="admin-view-tabs">
-        <button
-          type="button"
-          className={`admin-filter-tab ${view === "orders" ? "active" : ""}`}
-          onClick={() => setView("orders")}
-        >
-          <Package size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
-          Orders
-          {stats.pending > 0 && <span className="dashboard-tab-badge">{stats.pending}</span>}
-        </button>
-        <button
-          type="button"
-          className={`admin-filter-tab ${view === "users" ? "active" : ""}`}
-          onClick={() => { setView("users"); setSelectedUserId(null); setUserDetail(null); }}
-        >
-          <Users size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
-          Users
-        </button>
-        <button
-          type="button"
-          className={`admin-filter-tab ${view === "boosts" ? "active" : ""}`}
-          onClick={() => setView("boosts")}
-        >
-          <Star size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
-          Boosts
-          {boosts.filter((b) => b.status === "pending_payment").length > 0 && (
-            <span className="dashboard-tab-badge">
-              {boosts.filter((b) => b.status === "pending_payment").length}
-            </span>
-          )}
-        </button>
-        <button
-          type="button"
-          className={`admin-filter-tab ${view === "mail" ? "active" : ""}`}
-          onClick={() => setView("mail")}
-        >
-          <Mail size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
-          Mail
-        </button>
-        <button
-          type="button"
-          className={`admin-filter-tab ${view === "notifications" ? "active" : ""}`}
-          onClick={() => setView("notifications")}
-        >
-          <Bell size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
-          Push
-        </button>
-      </div>
-
-      {/* ════════ ORDERS VIEW ════════ */}
-      {view === "orders" && (
-        <>
-          <div className="admin-stats">
-            <div className="admin-stat-card">
-              <div className="admin-stat-num">{stats.total}</div>
-              <div className="admin-stat-label">Total Orders</div>
-            </div>
-            <div className="admin-stat-card warn">
-              <div className="admin-stat-num">{stats.pending}</div>
-              <div className="admin-stat-label">Awaiting Payment</div>
-            </div>
-            <div className="admin-stat-card danger">
-              <div className="admin-stat-num">{stats.etaMissed}</div>
-              <div className="admin-stat-label">ETA Missed</div>
-            </div>
-            <div className="admin-stat-card info">
-              <div className="admin-stat-num">{stats.escrow}</div>
-              <div className="admin-stat-label">In Escrow</div>
-            </div>
-            <div className="admin-stat-card danger">
-              <div className="admin-stat-num">{stats.disputes}</div>
-              <div className="admin-stat-label">Disputes</div>
-            </div>
-            <div className="admin-stat-card success">
-              <div className="admin-stat-num">{stats.completed}</div>
-              <div className="admin-stat-label">Completed</div>
-            </div>
-            <div className="admin-stat-card escrow-total">
-              <div className="admin-stat-num">{formatPrice(stats.totalEscrowAmount)}</div>
-              <div className="admin-stat-label">Held in Escrow</div>
-            </div>
-          </div>
-
-          <div className="admin-filters">
-            <div className="admin-search-row">
-              <input
-                type="text"
-                className="admin-search"
-                placeholder="Search product, email, or order ID…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <select
-                className="admin-sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                aria-label="Sort orders"
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="amount_desc">Amount: high → low</option>
-                <option value="amount_asc">Amount: low → high</option>
-              </select>
-            </div>
-            <div className="admin-filter-tabs">
-              {["all", "pending_payment", "payment_received", "in_delivery", "delivered", "confirmed", "disputed", "completed", "refunded"].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className={`admin-filter-tab ${filterStatus === s ? "active" : ""}`}
-                  onClick={() => setFilterStatus(s)}
-                >
-                  {s === "all" ? "All" : STATUS_LABELS[s]?.label || s}
-                  {s === "pending_payment" && stats.pending > 0 && (
-                    <span className="dashboard-tab-badge">{stats.pending}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {error && <div className="error-banner">{error}</div>}
-
-          {loadingOrders ? (
-            <div className="loading-wrap"><div className="spinner" /> Loading orders…</div>
-          ) : sorted.length === 0 ? (
-            <div className="dashboard-empty">
-              <p>
-                {orders.length === 0 && !error
-                  ? "No orders in the system yet. When a buyer places an order, it will appear here."
-                  : `No orders match your filter${filterStatus !== "all" ? ` ("${filterStatus}")` : ""}.`}
-              </p>
-            </div>
-          ) : (
-            <>
-              {actionRequired.length > 0 && (
-                <section className="admin-orders-section">
-                  <h3 className="admin-orders-section-title attention">
-                    <AlertTriangle size={18} strokeWidth={2} className="inline-icon" aria-hidden="true" />
-                    Action required ({actionRequired.length})
-                  </h3>
-                  <div className="admin-orders-list">
-                    {actionRequired.map((order) => renderOrderCard(order))}
-                  </div>
-                </section>
-              )}
-
-              {otherOrders.length > 0 && (
-                <section className="admin-orders-section">
-                  {actionRequired.length > 0 && (
-                    <h3 className="admin-orders-section-title">
-                      All other orders ({otherOrders.length})
-                    </h3>
-                  )}
-                  <div className="admin-orders-list">
-                    {visibleOthers.map((order) => renderOrderCard(order))}
-                  </div>
-                  {otherOrders.length > visibleCount && (
-                    <button
-                      type="button"
-                      className="admin-load-more-btn"
-                      onClick={() => setVisibleCount((c) => c + 20)}
-                    >
-                      Show more ({otherOrders.length - visibleCount} remaining)
-                    </button>
-                  )}
-                </section>
-              )}
-            </>
-          )}
-        </>
-      )}
-
-      {/* ════════ BOOSTS VIEW ════════ */}
-      {view === "boosts" && (
-        <>
-          {boostsError && <div className="error-banner">{boostsError}</div>}
-          {boostsLoading ? (
-            <div className="loading-wrap"><div className="spinner" /> Loading boost requests…</div>
-          ) : (
-            <>
-              {boosts.filter((b) => b.status === "pending_payment").length > 0 && (
-                <section className="admin-orders-section">
-                  <h3 className="admin-orders-section-title attention">
-                    <AlertTriangle size={18} strokeWidth={2} className="inline-icon" aria-hidden="true" />
-                    Awaiting approval ({boosts.filter((b) => b.status === "pending_payment").length})
-                  </h3>
-                  <div className="admin-orders-list">
-                    {boosts
-                      .filter((b) => b.status === "pending_payment")
-                      .map((boost) => (
-                        <div key={boost.id} className="admin-boost-card">
-                          <div className="admin-boost-main">
-                            <strong>{boost.target_title}</strong>
-                            <span className="admin-boost-meta">
-                              {boost.target_type === "product" ? "Listing" : "Service"} ·{" "}
-                              {formatPrice(boost.amount)} · requested {boost.duration_days} days
-                            </span>
-                            {boost.payment_reference && (
-                              <span className="admin-boost-ref">Ref: {boost.payment_reference}</span>
-                            )}
-                            <span className="admin-boost-meta">{formatDateTime(boost.created_at)}</span>
-                          </div>
-                          <div className="admin-boost-actions">
-                            <label className="admin-boost-duration-label">
-                              Active for
-                              <select
-                                className="admin-boost-duration-select"
-                                value={boostDurations[boost.id] || boost.duration_days}
-                                onChange={(e) =>
-                                  setBoostDurations((prev) => ({
-                                    ...prev,
-                                    [boost.id]: parseInt(e.target.value, 10),
-                                  }))
-                                }
-                              >
-                                {BOOST_PLANS.map((p) => (
-                                  <option key={p.days} value={p.days}>{p.label}</option>
-                                ))}
-                              </select>
-                            </label>
-                            <button
-                              type="button"
-                              className="admin-action-btn success"
-                              disabled={actionLoading[boost.id]}
-                              onClick={() => handleBoostAction(boost.id, "active")}
-                            >
-                              {actionLoading[boost.id] ? "…" : "Activate Sponsored"}
-                            </button>
-                            <button
-                              type="button"
-                              className="admin-action-btn danger"
-                              disabled={actionLoading[boost.id]}
-                              onClick={() => handleBoostAction(boost.id, "rejected")}
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </section>
-              )}
-
-              <section className="admin-orders-section">
-                <h3 className="admin-orders-section-title">All boost history</h3>
-                {boosts.length === 0 ? (
-                  <div className="dashboard-empty"><p>No boost requests yet.</p></div>
-                ) : (
-                  <div className="admin-orders-list">
-                    {boosts.map((boost) => (
-                      <div key={boost.id} className="admin-boost-card admin-boost-card--compact">
-                        <div className="admin-boost-main">
-                          <strong>{boost.target_title}</strong>
-                          <span className="admin-boost-meta">
-                            {boost.target_type} · {formatPrice(boost.amount)} · {boost.duration_days}d
-                            {boost.ends_at ? ` · ends ${formatDate(boost.ends_at)}` : ""}
-                          </span>
-                        </div>
-                        <span className={`admin-boost-status admin-boost-status--${boost.status}`}>
-                          {boost.status === "pending_payment" && "Pending"}
-                          {boost.status === "active" && "Active"}
-                          {boost.status === "expired" && "Expired"}
-                          {boost.status === "rejected" && "Rejected"}
-                          {boost.status === "cancelled" && "Cancelled"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            </>
-          )}
-        </>
-      )}
-
-      {/* ════════ USERS VIEW ════════ */}
-      {view === "users" && !selectedUserId && (
-        <>
-          <div className="admin-filters">
-            <input
-              type="text"
-              className="admin-search"
-              placeholder="Search by name or email…"
-              value={userSearch}
-              onChange={(e) => setUserSearch(e.target.value)}
-            />
-          </div>
-
-          {usersError && <div className="error-banner">{usersError}</div>}
-
-          {usersLoading ? (
-            <div className="loading-wrap"><div className="spinner" /> Loading users…</div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="dashboard-empty">
-              <p>{users.length === 0 ? "No registered users yet." : "No users match your search."}</p>
-            </div>
-          ) : (
-            <div className="admin-user-list">
-              {filteredUsers.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  className="admin-user-card"
-                  onClick={() => setSelectedUserId(u.id)}
-                >
-                  {u.avatar_url ? (
-                    <img src={u.avatar_url} alt="" className="admin-user-avatar" />
-                  ) : (
-                    <div className="admin-user-avatar admin-user-avatar-placeholder">
-                      <User size={22} strokeWidth={1.75} aria-hidden="true" />
-                    </div>
-                  )}
-                  <div className="admin-user-info">
-                    <div className="admin-user-name">
-                      {u.full_name || "(no name)"}
-                      {u.is_admin && <span className="admin-user-admin-badge">ADMIN</span>}
-                      {u.is_verified_seller && <VerifiedBadge compact size={12} className="admin-user-verified" />}
-                      {u.verification_requested_at && !u.is_verified_seller && (
-                        <span className="admin-user-pending-badge">Pending verify</span>
-                      )}
-                      {u.verification_rejected_at && !u.is_verified_seller && !u.verification_requested_at && (
-                        <span className="admin-user-declined-badge">Declined</span>
-                      )}
-                    </div>
-                    <div className="admin-user-email">{u.email}</div>
-                    {u.phone && (
-                      <div className="admin-user-phone">
-                        <Smartphone size={14} strokeWidth={2} className="inline-icon" aria-hidden="true" />
-                        {u.phone}
-                      </div>
-                    )}
-                    <div className="admin-user-joined">Joined {formatDate(u.created_at)}</div>
-                  </div>
-                  <div className="admin-user-counts">
-                    <span title="Listings">
-                      <Package size={14} strokeWidth={2} className="admin-stat-icon" aria-hidden="true" />
-                      {u.counts.listings}
-                    </span>
-                    <span title="Purchases">
-                      <ShoppingCart size={14} strokeWidth={2} className="admin-stat-icon" aria-hidden="true" />
-                      {u.counts.purchases}
-                    </span>
-                    <span title="Sales">
-                      <Briefcase size={14} strokeWidth={2} className="admin-stat-icon" aria-hidden="true" />
-                      {u.counts.sales}
-                    </span>
-                    <span title="Messages">
-                      <MessageCircle size={14} strokeWidth={2} className="admin-stat-icon" aria-hidden="true" />
-                      {u.counts.messages}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ════════ USER DETAIL VIEW ════════ */}
-      {view === "users" && selectedUserId && (
-        <>
-          <button
-            type="button"
-            className="admin-back-btn"
-            onClick={() => { setSelectedUserId(null); setUserDetail(null); }}
-          >
-            ← All users
+    <div className="admin-dashboard-layout">
+      
+      {/* ── SIDEBAR ── */}
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-logo">SellSomething</div>
+        <nav className="admin-sidebar-nav">
+          <button className={`admin-nav-item ${view === "orders" ? "active" : ""}`} onClick={() => setView("orders")}>
+            <ShoppingCart size={20} /> Orders
+            {stats.pending > 0 && <span className="admin-nav-badge">{stats.pending}</span>}
           </button>
+          <button className={`admin-nav-item ${view === "users" ? "active" : ""}`} onClick={() => { setView("users"); setSelectedUserId(null); setUserDetail(null); }}>
+            <Users size={20} /> Users
+          </button>
+          <button className={`admin-nav-item ${view === "boosts" ? "active" : ""}`} onClick={() => setView("boosts")}>
+            <Star size={20} /> Boosts
+            {boosts.filter(b => b.status === "pending_payment").length > 0 && (
+              <span className="admin-nav-badge">{boosts.filter(b => b.status === "pending_payment").length}</span>
+            )}
+          </button>
+          <button className={`admin-nav-item ${view === "mail" ? "active" : ""}`} onClick={() => setView("mail")}>
+            <Mail size={20} /> Mail
+          </button>
+          <button className={`admin-nav-item ${view === "notifications" ? "active" : ""}`} onClick={() => setView("notifications")}>
+            <Bell size={20} /> Push Notifications
+          </button>
+        </nav>
+      </aside>
 
-          {userDetailLoading ? (
-            <div className="loading-wrap"><div className="spinner" /> Loading user…</div>
-          ) : !userDetail ? (
-            <div className="dashboard-empty"><p>Could not load this user.</p></div>
-          ) : (
-            <>
-              <div className="admin-user-detail-header">
-                {userDetail.profile.avatar_url ? (
-                  <img src={userDetail.profile.avatar_url} alt="" className="admin-user-avatar admin-user-avatar-lg" />
+      {/* ── MOBILE BOTTOM NAV ── */}
+      <nav className="admin-mobile-nav">
+        <button className={`admin-mobile-nav-item ${view === "orders" ? "active" : ""}`} onClick={() => setView("orders")}>
+          <ShoppingCart size={22} /> Orders
+        </button>
+        <button className={`admin-mobile-nav-item ${view === "users" ? "active" : ""}`} onClick={() => { setView("users"); setSelectedUserId(null); }}>
+          <Users size={22} /> Users
+        </button>
+        <button className={`admin-mobile-nav-item ${view === "boosts" ? "active" : ""}`} onClick={() => setView("boosts")}>
+          <Star size={22} /> Boosts
+        </button>
+        <button className={`admin-mobile-nav-item ${view === "mail" ? "active" : ""}`} onClick={() => setView("mail")}>
+          <Mail size={22} /> Mail
+        </button>
+      </nav>
+
+      {/* ── MAIN CONTENT ── */}
+      <main className="admin-main">
+        <div className="admin-topbar">
+          <h1 className="admin-page-title">
+            {view === "orders" && "Order Management"}
+            {view === "users" && (selectedUserId ? "User Details" : "Users")}
+            {view === "boosts" && "Boost Campaigns"}
+            {view === "mail" && "Email Center"}
+            {view === "notifications" && "Push Notifications"}
+          </h1>
+          <div className="admin-topbar-actions">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 10 }}>
+              <div className="admin-user-avatar" style={{width: 32, height: 32, background: '#e0e5f2'}}><User size={16} /></div>
+              <span style={{ fontWeight: 600, color: '#2b3674' }}>{profile?.full_name || 'Admin'}</span>
+            </div>
+            <button className="admin-btn-refresh" onClick={() => {
+              if (view === "orders") loadOrders();
+              else if (view === "boosts") loadBoosts();
+              else if (selectedUserId) loadUserDetail(selectedUserId);
+              else loadUsers();
+            }}>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* ════════ ORDERS VIEW ════════ */}
+        {view === "orders" && (
+          <>
+            <div className="admin-kpi-row">
+              <div className="admin-kpi-card">
+                <span className="admin-kpi-label">Total Orders</span>
+                <span className="admin-kpi-value">{stats.total}</span>
+              </div>
+              <div className="admin-kpi-card warn">
+                <span className="admin-kpi-label">Awaiting Payment</span>
+                <span className="admin-kpi-value">{stats.pending}</span>
+              </div>
+              <div className="admin-kpi-card info">
+                <span className="admin-kpi-label">In Escrow</span>
+                <span className="admin-kpi-value">{stats.escrow}</span>
+              </div>
+              <div className="admin-kpi-card danger">
+                <span className="admin-kpi-label">Disputes</span>
+                <span className="admin-kpi-value">{stats.disputes}</span>
+              </div>
+              <div className="admin-kpi-card danger">
+                <span className="admin-kpi-label">ETA Missed</span>
+                <span className="admin-kpi-value">{stats.etaMissed}</span>
+              </div>
+              <div className="admin-kpi-card success">
+                <span className="admin-kpi-label">Completed</span>
+                <span className="admin-kpi-value">{stats.completed}</span>
+              </div>
+            </div>
+
+            <div className="admin-table-panel">
+              <div className="admin-table-header">
+                <h3 className="admin-table-title">Recent Orders</h3>
+                <div className="admin-table-filters">
+                  <input
+                    type="text"
+                    placeholder="Search by ID, email, or product..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="admin-table-search"
+                  />
+                  <select
+                    className="admin-table-select"
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="pending_payment">Pending Payment</option>
+                    <option value="payment_received">Payment Received</option>
+                    <option value="in_delivery">In Delivery</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="confirmed">Buyer Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="disputed">Disputed</option>
+                    <option value="refunded">Refunded</option>
+                  </select>
+                </div>
+              </div>
+              <div className="admin-table-wrapper">
+                {loadingOrders ? (
+                  <div style={{ padding: '3rem', textAlign: 'center', color: '#a3aed1' }}>Loading...</div>
                 ) : (
-                  <div className="admin-user-avatar admin-user-avatar-lg admin-user-avatar-placeholder">
-                    <User size={36} strokeWidth={1.5} aria-hidden="true" />
-                  </div>
-                )}
-                <div>
-                  <h2 className="admin-user-detail-name">
-                    {userDetail.profile.full_name || "(no name)"}
-                    {userDetail.profile.is_admin && <span className="admin-user-admin-badge">ADMIN</span>}
-                    {userDetail.profile.is_verified_seller && <VerifiedBadge />}
-                  </h2>
-                  <div className="admin-user-email">{userDetail.profile.email}</div>
-                  {userDetail.profile.verification_requested_at && !userDetail.profile.is_verified_seller && (
-                    <div className="admin-user-pending-note">
-                      Requested seller verification {formatDate(userDetail.profile.verification_requested_at)}
-                    </div>
-                  )}
-                  {userDetail.profile.verification_rejected_at && !userDetail.profile.is_verified_seller && (
-                    <div className="admin-user-declined-note">
-                      Declined {formatDate(userDetail.profile.verification_rejected_at)}
-                      {userDetail.profile.verification_rejection_reason && (
-                        <> — {userDetail.profile.verification_rejection_reason}</>
+                  <table className="admin-data-table">
+                    <thead>
+                      <tr>
+                        <th>Order ID</th>
+                        <th>Product</th>
+                        <th>Participants</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {actionRequired.map(renderOrderRow)}
+                      {visibleOthers.map(renderOrderRow)}
+                      {sorted.length === 0 && (
+                        <tr><td colSpan="7" style={{textAlign: 'center', padding: '2rem'}}>No orders found.</td></tr>
                       )}
-                    </div>
-                  )}
-                  <div className="admin-user-verify-actions">
-                    {!userDetail.profile.is_verified_seller ? (
-                      <>
-                        <button
-                          type="button"
-                          className="admin-action-btn"
-                          disabled={verificationLoading || !userDetail.profile.phone}
-                          onClick={() => handleUserVerification(userDetail.profile.id, true)}
-                        >
-                          {verificationLoading ? "Saving…" : "Verify seller"}
-                        </button>
-                        {userDetail.profile.verification_requested_at && (
-                          <div className="admin-verification-decline">
-                            <label className="form-label" htmlFor="decline-reason">Decline verification</label>
-                            <select
-                              id="decline-reason"
-                              className="form-input"
-                              value={rejectReasonCode}
-                              onChange={(e) => setRejectReasonCode(e.target.value)}
-                              disabled={verificationLoading}
-                            >
-                              {VERIFICATION_REJECTION_REASONS.map((r) => (
-                                <option key={r.id} value={r.id}>{r.label}</option>
-                              ))}
-                            </select>
-                            <textarea
-                              className="form-input admin-decline-note"
-                              placeholder={rejectReasonCode === "other" ? "Required: explain why verification was declined" : "Optional note to include in the email"}
-                              value={rejectReasonNote}
-                              onChange={(e) => setRejectReasonNote(e.target.value)}
-                              rows={2}
-                              maxLength={500}
-                              disabled={verificationLoading}
-                            />
-                            <button
-                              type="button"
-                              className="cat-btn admin-decline-btn"
-                              disabled={verificationLoading}
-                              onClick={() => handleDeclineVerification(userDetail.profile.id)}
-                            >
-                              {verificationLoading ? "Saving…" : "Decline & notify seller"}
-                            </button>
-                          </div>
-                        )}
-                      </>
+                    </tbody>
+                  </table>
+                )}
+              </div>
+              {visibleOthers.length < otherOrders.length && (
+                <div style={{ padding: '1.5rem', textAlign: 'center', borderTop: '1px solid #f4f7fe' }}>
+                  <button className="admin-btn-refresh" style={{ margin: '0 auto' }} onClick={() => setVisibleCount((c) => c + 20)}>
+                    Load More
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ════════ USERS VIEW ════════ */}
+        {view === "users" && !selectedUserId && (
+          <div className="admin-table-panel">
+            <div className="admin-table-header">
+              <h3 className="admin-table-title">Platform Users</h3>
+              <div className="admin-table-filters">
+                <input
+                  type="text"
+                  placeholder="Search name, email, phone..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="admin-table-search"
+                />
+              </div>
+            </div>
+            <div className="admin-table-wrapper">
+              {usersLoading ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#a3aed1' }}>Loading...</div>
+              ) : (
+                <table className="admin-data-table">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Phone</th>
+                      <th>Joined</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map(renderUserRow)}
+                    {filteredUsers.length === 0 && (
+                      <tr><td colSpan="5" style={{textAlign: 'center', padding: '2rem'}}>No users found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ════════ USER DETAILS VIEW ════════ */}
+        {view === "users" && selectedUserId && userDetail && (
+          <div className="admin-table-panel" style={{ padding: '2rem' }}>
+            <button className="admin-btn-refresh" style={{ width: 'fit-content', marginBottom: '1.5rem' }} onClick={() => setSelectedUserId(null)}>
+              Back to Users
+            </button>
+            <div className="admin-user-details-layout">
+              <div className="admin-detail-card" style={{ marginBottom: '2rem', display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                <div className="admin-user-avatar" style={{ width: 80, height: 80 }}>
+                  <User size={40} />
+                </div>
+                <div>
+                  <h2 style={{ margin: '0 0 0.5rem', color: '#2b3674' }}>{userDetail.profile.full_name}</h2>
+                  <div style={{ color: '#a3aed1', marginBottom: '1rem' }}>{userDetail.profile.email} · {userDetail.profile.phone}</div>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    {userDetail.profile.is_verified_seller ? (
+                      <button className="admin-row-action" style={{ background: '#ef4444' }} onClick={() => handleUserVerification(selectedUserId, false)} disabled={verificationLoading}>
+                        Remove Verification
+                      </button>
                     ) : (
-                      <button
-                        type="button"
-                        className="cat-btn"
-                        disabled={verificationLoading}
-                        onClick={() => handleUserVerification(userDetail.profile.id, false)}
-                      >
-                        Remove verification
+                      <button className="admin-row-action" style={{ background: '#10b981' }} onClick={() => handleUserVerification(selectedUserId, true)} disabled={verificationLoading}>
+                        Approve Verification
                       </button>
                     )}
-                    {!userDetail.profile.phone && (
-                      <span className="admin-order-ref">No phone on profile — ask user to add one first</span>
-                    )}
                   </div>
-                  {userDetail.profile.phone && (
-                    <div className="admin-user-phone">
-                      <Smartphone size={14} strokeWidth={2} className="inline-icon" aria-hidden="true" />
-                      <a href={`tel:${userDetail.profile.phone.replace(/\s/g, "")}`}>
-                        {userDetail.profile.phone}
-                      </a>
-                    </div>
-                  )}
-                  <div className="admin-user-joined">Joined {formatDate(userDetail.profile.created_at)}</div>
                 </div>
               </div>
-
               <AdminVerificationDetails profile={userDetail.profile} />
+            </div>
+          </div>
+        )}
 
-              <div className="admin-stats">
-                <div className="admin-stat-card">
-                  <div className="admin-stat-num">{userDetail.listings.length}</div>
-                  <div className="admin-stat-label">Listings</div>
-                </div>
-                <div className="admin-stat-card info">
-                  <div className="admin-stat-num">{userDetail.purchases.length}</div>
-                  <div className="admin-stat-label">Purchases</div>
-                </div>
-                <div className="admin-stat-card success">
-                  <div className="admin-stat-num">{userDetail.sales.length}</div>
-                  <div className="admin-stat-label">Sales</div>
-                </div>
-                <div className="admin-stat-card warn">
-                  <div className="admin-stat-num">{userDetail.conversations.length}</div>
-                  <div className="admin-stat-label">Conversations</div>
-                </div>
-              </div>
+        {/* ════════ BOOSTS VIEW ════════ */}
+        {view === "boosts" && (
+          <div className="admin-table-panel">
+            <div className="admin-table-header">
+              <h3 className="admin-table-title">Boost Campaigns</h3>
+            </div>
+            <div className="admin-table-wrapper">
+              {boostsLoading ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#a3aed1' }}>Loading...</div>
+              ) : (
+                <table className="admin-data-table">
+                  <thead>
+                    <tr>
+                      <th>Boost ID</th>
+                      <th>Product</th>
+                      <th>Seller Email</th>
+                      <th>Plan</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {boosts.map(renderBoostRow)}
+                    {boosts.length === 0 && (
+                      <tr><td colSpan="6" style={{textAlign: 'center', padding: '2rem'}}>No boosts found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
 
-              {/* Purchases */}
-              <section className="admin-user-section">
-                <h3 className="admin-user-section-title">
-                  <ShoppingCart size={18} strokeWidth={2} className="admin-section-icon" aria-hidden="true" />
-                  Purchases (as buyer)
-                </h3>
-                {userDetail.purchases.length === 0 ? (
-                  <p className="admin-user-empty">No purchases.</p>
-                ) : (
-                  userDetail.purchases.map((o) => <MiniOrderRow key={o.id} order={o} />)
-                )}
-              </section>
+        {/* ════════ MAIL VIEW ════════ */}
+        {view === "mail" && (
+          <div className="admin-table-panel" style={{ background: 'transparent', boxShadow: 'none' }}>
+            <AdminMailPanel accessToken={accessToken} />
+          </div>
+        )}
 
-              {/* Sales */}
-              <section className="admin-user-section">
-                <h3 className="admin-user-section-title">
-                  <Briefcase size={18} strokeWidth={2} className="admin-section-icon" aria-hidden="true" />
-                  Sales (as seller)
-                </h3>
-                {userDetail.sales.length === 0 ? (
-                  <p className="admin-user-empty">No sales.</p>
-                ) : (
-                  userDetail.sales.map((o) => <MiniOrderRow key={o.id} order={o} />)
-                )}
-              </section>
+        {/* ════════ PUSH VIEW ════════ */}
+        {view === "notifications" && (
+          <div className="admin-table-panel" style={{ background: 'transparent', boxShadow: 'none' }}>
+            <AdminNotificationPanel accessToken={accessToken} />
+          </div>
+        )}
 
-              {/* Listings */}
-              <section className="admin-user-section">
-                <h3 className="admin-user-section-title">
-                  <Package size={18} strokeWidth={2} className="admin-section-icon" aria-hidden="true" />
-                  Listings
-                </h3>
-                {userDetail.listings.length === 0 ? (
-                  <p className="admin-user-empty">No listings.</p>
-                ) : (
-                  userDetail.listings.map((p) => (
-                    <div key={p.id} className="admin-mini-order">
-                      <div className="admin-mini-order-main">
-                        <span className="admin-mini-order-title">{p.title}</span>
-                        <span className="admin-mini-order-sub">
-                          {p.category} · {p.location || "—"} · posted {formatDate(p.created_at)}
-                        </span>
-                      </div>
-                      <div className="admin-mini-order-right">
-                        <span className="admin-mini-order-amount">{formatPrice(p.price)}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </section>
-
-              {/* Conversations */}
-              <section className="admin-user-section">
-                <h3 className="admin-user-section-title">
-                  <MessageCircle size={18} strokeWidth={2} className="admin-section-icon" aria-hidden="true" />
-                  Conversations
-                </h3>
-                {userDetail.messagesAvailable === false && (
-                  <div className="error-banner" style={{ marginBottom: "1rem" }}>
-                    Full message access requires SUPABASE_SERVICE_ROLE_KEY on the server.
-                  </div>
-                )}
-                {userDetail.conversations.length === 0 ? (
-                  <p className="admin-user-empty">No conversations.</p>
-                ) : (
-                  userDetail.conversations.map((t, idx) => {
-                    const contextId = t.employee?.id || t.product?.id || idx;
-                    const key = `${contextId}_${t.otherUser.id}`;
-                    const contextLabel = t.employee
-                      ? `${t.employee.name} (${t.employee.profession})`
-                      : t.product?.title;
-                    const isOpen = !!openThreads[key];
-                    const flagged = t.messages.some((m) => isSuspicious(m.content));
-                    return (
-                      <div key={key} className={`admin-chat-thread ${flagged ? "flagged" : ""}`}>
-                        <button
-                          type="button"
-                          className="admin-chat-thread-header"
-                          onClick={() => setOpenThreads((prev) => ({ ...prev, [key]: !isOpen }))}
-                        >
-                          <div className="admin-chat-thread-title">
-                            <strong>{t.otherUser.full_name || t.otherUser.email || "Unknown user"}</strong>
-                            <span className="admin-mini-order-sub"> · about "{contextLabel}"</span>
-                            {flagged && (
-                              <span className="admin-chat-flag">
-                                <AlertTriangle size={12} strokeWidth={2} aria-hidden="true" />
-                                possible off-platform deal
-                              </span>
-                            )}
-                          </div>
-                          <span className="admin-chat-thread-count">
-                            {t.messages.length} message{t.messages.length !== 1 ? "s" : ""} {isOpen ? "▲" : "▼"}
-                          </span>
-                        </button>
-                        {isOpen && (
-                          <div className="admin-chat-messages">
-                            {t.messages.map((m) => {
-                              const fromThisUser = m.sender_id === userDetail.profile.id;
-                              const suspicious = isSuspicious(m.content);
-                              return (
-                                <div
-                                  key={m.id}
-                                  className={`admin-chat-msg ${fromThisUser ? "from-user" : "from-other"} ${suspicious ? "suspicious" : ""}`}
-                                >
-                                  <div className="admin-chat-msg-meta">
-                                    {fromThisUser
-                                      ? (userDetail.profile.full_name || userDetail.profile.email)
-                                      : (t.otherUser.full_name || t.otherUser.email)}
-                                    {" · "}{formatDateTime(m.created_at)}
-                                    {suspicious && (
-                                      <>
-                                        {" · "}
-                                        <AlertTriangle size={12} strokeWidth={2} className="inline-icon" aria-hidden="true" />
-                                      </>
-                                    )}
-                                  </div>
-                                  <div className="admin-chat-msg-content">{m.content}</div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </section>
-            </>
-          )}
-        </>
-      )}
-
-      {/* ════════ MAIL VIEW ════════ */}
-      {view === "mail" && (
-        <AdminMailPanel accessToken={accessToken} />
-      )}
-
-      {/* ════════ PUSH NOTIFICATIONS VIEW ════════ */}
-      {view === "notifications" && (
-        <AdminNotificationPanel accessToken={accessToken} />
-      )}
+      </main>
     </div>
   );
 }
