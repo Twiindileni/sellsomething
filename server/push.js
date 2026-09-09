@@ -93,6 +93,17 @@ async function sendPushToUser(db, userId, notification) {
   return sendPushToTokens(tokens, notification);
 }
 
+async function sendPushToAll(db, notification) {
+  const { data, error } = await db.from("push_tokens").select("token");
+  if (error) {
+    console.warn("[push] load all tokens failed:", error.message);
+    return { sent: 0 };
+  }
+  const tokens = (data || []).map((row) => row.token);
+  console.log(`[push] sendPushToAll tokens=${tokens.length} title="${notification.title}"`);
+  return sendPushToTokens(tokens, notification);
+}
+
 function firePush(promise) {
   promise.catch((err) => console.warn("[push] send failed:", err.message));
 }
@@ -100,6 +111,7 @@ function firePush(promise) {
 module.exports = {
   initPush,
   sendPushToUser,
+  sendPushToAll,
   sendPushToTokens,
   firePush,
 };

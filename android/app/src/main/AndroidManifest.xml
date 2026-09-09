@@ -27,15 +27,22 @@
         android:usesCleartextTraffic="false">
 
         <activity
+            android:name=".SplashActivity"
+            android:theme="@style/Theme.App.Starting"
+            android:exported="true"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
 
             <!-- OAuth callback — return from Google sign-in (PKCE ?code= in query string) -->
             <intent-filter android:autoVerify="true">

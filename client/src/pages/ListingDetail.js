@@ -12,6 +12,7 @@ import {
   Smartphone, CarFront, Sofa, Shirt, Home, Tractor, Wrench, Package, 
   Heart, MapPin, User, Clock, ShieldCheck, MessageCircle, Lock 
 } from "lucide-react";
+import "./ListingDetail.css";
 
 const CATEGORY_ICONS = {
   Electronics: Smartphone, Vehicles: CarFront, Furniture: Sofa,
@@ -213,96 +214,124 @@ export default function ListingDetail() {
   const isOwnListing = user?.email === product.seller_email;
 
   return (
-    <div className="detail-page">
-      <Link to="/" className="detail-back">
-        ← Back to listings
-      </Link>
+    <div className="detail-page modern-detail-page">
+      {/* Floating Top Nav */}
+      <div className="floating-top-nav">
+        <button className="floating-icon-btn back-btn" onClick={() => navigate(-1)}>
+          ←
+        </button>
+        <button 
+          className={`floating-icon-btn like-btn ${liked ? 'liked' : ''}`}
+          onClick={handleLike}
+          aria-label={liked ? "Unlike" : "Like"}
+        >
+          <Heart size={20} strokeWidth={2.5} fill={liked ? "currentColor" : "none"} />
+        </button>
+      </div>
 
-      <div className="detail-grid">
-        <ListingGallery images={images} title={product.title} categoryIcon={<IconComponent size={80} strokeWidth={1} color="currentColor" />} />
+      <div className="modern-detail-grid">
+        {/* Left/Top Column: Image Gallery */}
+        <div className="modern-gallery-container">
+          <ListingGallery images={images} title={product.title} categoryIcon={<IconComponent size={80} strokeWidth={1} color="currentColor" />} />
+        </div>
 
-        <div className="detail-info">
-          <div className="card-header-flex">
-            <span className="detail-category">{product.category}</span>
-            <button 
-              className={`like-btn ${liked ? 'liked' : ''}`}
-              onClick={handleLike}
-              aria-label={liked ? "Unlike" : "Like"}
-              style={{ fontSize: '1rem', padding: '0.5rem 0.8rem' }}
-            >
-              <Heart size={18} strokeWidth={2.5} />
-              {likes}
-            </button>
-          </div>
-          <h1 className="detail-title">{product.title}</h1>
-          <div className="detail-price">{formatPrice(product.price)}</div>
+        {/* Right/Bottom Column: Product Info Card */}
+        <div className="modern-detail-info bottom-sheet-card">
+          <div className="modern-info-scrollable">
+            
+            <div className="card-top-meta">
+              <span className="modern-category-badge">
+                <IconComponent size={14} style={{marginRight: 4}}/> {product.category}
+              </span>
+              <span className="time-ago-badge">{timeAgo(product.created_at)}</span>
+            </div>
 
-          {hasImages && images.length > 1 && (
-            <p className="detail-photo-count">{images.length} photos</p>
-          )}
+            <h1 className="modern-detail-title">{product.title}</h1>
+            <div className="modern-detail-price">{formatPrice(product.price)}</div>
 
-          {product.description && (
-            <p className="detail-desc">{product.description}</p>
-          )}
+            <div className="section-divider"></div>
 
-          <div className="detail-meta">
-            {product.location && (
-              <div className="meta-row">
-                <span className="meta-label"><MapPin size={14} style={{marginRight: '6px', position: 'relative', top: '2px'}}/> Location</span>
-                <span>{product.location}</span>
-              </div>
+            <h3 className="section-heading">About this product</h3>
+            {product.description ? (
+              <p className="modern-detail-desc">{product.description}</p>
+            ) : (
+              <p className="modern-detail-desc" style={{color: '#888'}}>No description provided.</p>
             )}
-            <div className="meta-row">
-              <span className="meta-label"><User size={14} style={{marginRight: '6px', position: 'relative', top: '2px'}}/> Seller</span>
-              <SellerNameLine product={product} badgeSize={14} />
-            </div>
-            <div className="meta-row">
-              <span className="meta-label"><Clock size={14} style={{marginRight: '6px', position: 'relative', top: '2px'}}/> Posted</span>
-              <span>{timeAgo(product.created_at)}</span>
-            </div>
-          </div>
 
-          {isSold && (
-            <div className="listing-sold-banner">
-              This item has been marked as sold and is no longer available for purchase.
-              {isOwnListing && (
-                <span> You can relist it from Dashboard → My Ads &amp; Services.</span>
+            <h3 className="section-heading">Listing details</h3>
+            <div className="modern-meta-grid">
+              {product.location && (
+                <div className="modern-meta-item">
+                  <MapPin size={18} className="meta-icon"/>
+                  <div className="meta-text">
+                    <span className="meta-label">Location</span>
+                    <span className="meta-value">{product.location}</span>
+                  </div>
+                </div>
+              )}
+              {hasImages && images.length > 1 && (
+                <div className="modern-meta-item">
+                  <Package size={18} className="meta-icon"/>
+                  <div className="meta-text">
+                    <span className="meta-label">Photos</span>
+                    <span className="meta-value">{images.length} included</span>
+                  </div>
+                </div>
               )}
             </div>
-          )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-            {/* Buy Now — Escrow Protected (only show if not seller's own listing) */}
-            {!isOwnListing && !isSold && (
-              <button
-                type="button"
-                className="contact-btn buynow-hero-btn"
-                style={{ margin: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                onClick={() => setShowBuyNow(true)}
-              >
-                <ShieldCheck size={18} strokeWidth={2.5} /> Buy Now — Escrow Protected
-              </button>
-            )}
-
-            {!isOwnListing && !isSold && (
-              <button
-                type="button"
-                className="contact-btn"
-                style={{ margin: 0, background: 'var(--white)', border: '1.5px solid var(--accent)', color: 'var(--accent)', boxShadow: 'none', display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                onClick={handleMessageClick}
-              >
-                <MessageCircle size={18} strokeWidth={2.5} /> Message Seller
-              </button>
-            )}
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)', textAlign: 'center', lineHeight: 1.5 }}>
-              All buyer–seller communication stays in-app so we can help if something goes wrong.
-            </p>
-
-            {/* Escrow info badge */}
-            <div className="escrow-info-badge">
-              <span><Lock size={20} strokeWidth={2} style={{ color: "var(--accent)", marginTop: "2px" }} /></span>
-              <span>All purchases are <strong>escrow-protected</strong>. Your money is held safely until you confirm delivery. Full refund if the item is not as described or not delivered.</span>
+            {/* Seller Profile Card */}
+            <div className="seller-profile-card">
+              <div className="seller-avatar">
+                <User size={24} color="var(--accent)" />
+              </div>
+              <div className="seller-info">
+                <span className="seller-label">Seller</span>
+                <span className="seller-name"><SellerNameLine product={product} badgeSize={16} /></span>
+              </div>
             </div>
+
+            {/* Escrow Trust Badge */}
+            <div className="trust-badge-premium">
+              <ShieldCheck size={28} className="trust-icon" />
+              <div className="trust-content">
+                <strong>Escrow Protected</strong>
+                <p>Your money is held safely until you confirm delivery. Full refund if the item is not as described.</p>
+              </div>
+            </div>
+
+            {isSold && (
+              <div className="listing-sold-banner">
+                This item has been marked as sold and is no longer available.
+                {isOwnListing && (
+                  <span> You can relist it from Dashboard.</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Sticky Action Footer (Desktop & Mobile) */}
+          <div className="modern-action-bar">
+            {!isOwnListing && !isSold ? (
+              <>
+                <button
+                  type="button"
+                  className="modern-btn modern-btn-primary"
+                  onClick={() => setShowBuyNow(true)}
+                >
+                  <ShieldCheck size={20} strokeWidth={2.5} /> Buy Now
+                </button>
+                <button
+                  type="button"
+                  className="modern-btn modern-btn-secondary"
+                  onClick={handleMessageClick}
+                >
+                  <MessageCircle size={20} strokeWidth={2.5} /> Message
+                </button>
+              </>
+            ) : isOwnListing ? (
+              <div className="action-bar-notice">This is your listing</div>
+            ) : null}
           </div>
         </div>
       </div>

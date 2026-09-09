@@ -230,6 +230,30 @@ async function sendVerificationApprovedEmail({ profile, to }) {
   });
 }
 
+async function sendAdminNoticeEmail({ to, name, title, body }) {
+  const recipient = (to || "").trim();
+  if (!recipient.includes("@")) {
+    throw new Error("No recipient email for admin notice.");
+  }
+  const greeting = name || recipient.split("@")[0] || "there";
+  const subject = title || "Update from Sell Something";
+  const bodyHtml = `
+    <p>Hi <strong>${escapeHtml(greeting)}</strong>,</p>
+    ${String(body || "")
+      .split(/\n+/)
+      .filter(Boolean)
+      .map((p) => `<p>${escapeHtml(p)}</p>`)
+      .join("")}
+  `;
+  const text = `Hi ${greeting},\n\n${body || ""}\n\n— Sell Something`;
+  return sendViaResend({
+    to: recipient,
+    subject,
+    html: emailLayout({ preview: subject, bodyHtml, unsubscribeUrl: null }),
+    text,
+  });
+}
+
 async function sendVerificationRejectedEmail({ profile, to, reason }) {
   const recipient = (to || profile?.email || "").trim();
   if (!recipient.includes("@")) {
@@ -269,5 +293,6 @@ module.exports = {
   sendVerificationConfirmationEmail,
   sendVerificationApprovedEmail,
   sendVerificationRejectedEmail,
+  sendAdminNoticeEmail,
   pickUserEmail,
 };

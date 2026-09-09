@@ -11,6 +11,7 @@ import {
   Star,
   Users,
   User,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -28,6 +29,7 @@ import { isEtaMissed, formatEta } from "../utils/orderHelpers";
 import StarRating from "../components/StarRating";
 import VerifiedBadge from "../components/VerifiedBadge";
 import AdminMailPanel from "../components/AdminMailPanel";
+import AdminNotificationPanel from "../components/AdminNotificationPanel";
 import { VERIFICATION_REJECTION_REASONS } from "../config/verificationRejectionReasons";
 
 function socialHref(value) {
@@ -600,6 +602,14 @@ export default function AdminPage() {
         >
           <Mail size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
           Mail
+        </button>
+        <button
+          type="button"
+          className={`admin-filter-tab ${view === "notifications" ? "active" : ""}`}
+          onClick={() => setView("notifications")}
+        >
+          <Bell size={16} strokeWidth={2} className="tab-icon" aria-hidden="true" />
+          Push
         </button>
       </div>
 
@@ -1185,6 +1195,11 @@ export default function AdminPage() {
       {/* ════════ MAIL VIEW ════════ */}
       {view === "mail" && (
         <AdminMailPanel accessToken={accessToken} />
+      )}
+
+      {/* ════════ PUSH NOTIFICATIONS VIEW ════════ */}
+      {view === "notifications" && (
+        <AdminNotificationPanel accessToken={accessToken} />
       )}
     </div>
   );

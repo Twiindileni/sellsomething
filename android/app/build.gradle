@@ -10,15 +10,15 @@ if (file('google-services.json').exists()) {
 
 android {
     namespace 'online.sellsomething.app'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         // Must match package_name in google-services.json (Firebase Android app)
-        applicationId "www.sellsomething.online"
+        applicationId "sellsomething.online"
         minSdk 26
-        targetSdk 34
-        versionCode 2
-        versionName "1.1"
+        targetSdk 36
+        versionCode 5
+        versionName "1.4"
     }
 
     buildTypes {
@@ -45,6 +45,7 @@ dependencies {
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.webkit:webkit:1.11.0'
     implementation 'androidx.browser:browser:1.8.0'
+    implementation 'androidx.core:core-splashscreen:1.0.1'
     implementation 'com.google.android.material:material:1.12.0'
 
     implementation platform('com.google.firebase:firebase-bom:33.7.0')

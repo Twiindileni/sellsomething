@@ -155,6 +155,15 @@ export const runAdminMailCampaign = (data, token) =>
 export const sendAdminMailToUser = (data, token) =>
   api.post("/admin/mail/send-user", data, authHeaders(token));
 
+export const getMyNotifications = (token) =>
+  api.get("/notifications", authHeaders(token));
+export const markNotificationRead = (id, token) =>
+  api.put(`/notifications/${id}/read`, {}, authHeaders(token));
+export const markAllNotificationsRead = (token) =>
+  api.put("/notifications/read-all", {}, authHeaders(token));
+export const sendAdminNotification = (data, token) =>
+  api.post("/admin/notifications", data, authHeaders(token));
+
 export const registerPushToken = (data, token) =>
   api.post("/push/register", {
     push_token: data.token,

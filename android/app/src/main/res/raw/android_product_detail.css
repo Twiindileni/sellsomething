@@ -1,0 +1,277 @@
+/* Android-only listing detail treatment injected by MainActivity. */
+.ss-android-product-detail {
+  background: #fffdfa !important;
+}
+
+.ss-android-product-detail .navbar,
+.ss-android-product-detail .site-footer,
+.ss-android-product-detail .modern-detail-page > .floating-back-btn,
+.ss-android-product-detail .modern-gallery-container > .floating-like-btn,
+.ss-android-product-detail .listing-gallery-thumbs,
+.ss-android-product-detail .detail-img-zoom-hint {
+  display: none !important;
+}
+
+.ss-android-product-detail .main-content,
+.ss-android-product-detail .detail-page,
+.ss-android-product-detail .modern-detail-page {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fffdfa !important;
+}
+
+.ss-android-product-detail .modern-detail-grid {
+  display: block !important;
+  padding: 0 !important;
+}
+
+.ss-android-product-detail .modern-gallery-container {
+  position: relative !important;
+  top: auto !important;
+  width: 100% !important;
+  height: 43vh !important;
+  min-height: 300px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #eee6de !important;
+  box-shadow: none !important;
+}
+
+.ss-android-product-detail .modern-gallery-container .listing-gallery,
+.ss-android-product-detail .modern-gallery-container > .detail-img-wrap,
+.ss-android-product-detail .modern-gallery-container .listing-gallery-main,
+.ss-android-product-detail .modern-gallery-container .detail-img-wrap {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.ss-android-product-detail .modern-gallery-container .detail-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.ss-android-product-detail .android-detail-top-actions,
+.ss-android-product-detail .detail-top-actions {
+  position: absolute !important;
+  z-index: 30 !important;
+  top: 14px !important;
+  right: 16px !important;
+  left: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  pointer-events: none !important;
+}
+
+.ss-android-product-detail .android-detail-action,
+.ss-android-product-detail .floating-back-btn,
+.ss-android-product-detail .floating-like-btn {
+  display: inline-flex !important;
+  width: 44px !important;
+  height: 44px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 4px 14px rgba(40, 30, 22, 0.16) !important;
+  color: #2d2520 !important;
+  text-decoration: none !important;
+  pointer-events: auto !important;
+}
+
+.ss-android-product-detail .android-detail-action svg,
+.ss-android-product-detail .floating-back-btn svg,
+.ss-android-product-detail .floating-like-btn svg {
+  width: 22px !important;
+  height: 22px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  stroke-width: 2 !important;
+}
+
+.ss-android-product-detail .floating-like-btn.liked,
+.ss-android-product-detail .android-detail-save.is-saved { color: #d63d53 !important; }
+
+.ss-android-product-detail .listing-gallery-badge {
+  z-index: 10 !important;
+  top: auto !important;
+  right: 16px !important;
+  bottom: 18px !important;
+}
+
+.ss-android-product-detail .modern-detail-info {
+  position: relative !important;
+  z-index: 4 !important;
+  width: 100% !important;
+  margin: -24px 0 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 26px 26px 0 0 !important;
+  background: #fffdfa !important;
+  box-shadow: 0 -8px 24px rgba(40, 30, 22, 0.08) !important;
+}
+
+.ss-android-product-detail .modern-info-scrollable {
+  padding: 22px 20px 110px !important;
+}
+
+.ss-android-product-detail .sheet-header-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  margin-bottom: 14px !important;
+}
+
+.ss-android-product-detail .modern-category-badge {
+  display: inline-flex !important;
+  margin: 0 !important;
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  background: rgba(212, 80, 10, 0.1) !important;
+  color: #d4500a !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+}
+
+.ss-android-product-detail .modern-time-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  color: #9a8878 !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+
+.ss-android-product-detail .modern-detail-title {
+  margin: 0 !important;
+  color: #2d2520 !important;
+  font-size: 27px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.08 !important;
+}
+
+.ss-android-product-detail .modern-detail-price {
+  margin: 8px 0 18px !important;
+  color: #287c54 !important;
+  font-size: 25px !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+}
+
+.ss-android-product-detail .detail-photo-count {
+  margin: -8px 0 16px !important;
+  color: #9a8878 !important;
+  font-size: 12px !important;
+}
+
+.ss-android-product-detail .sheet-section {
+  margin: 0 !important;
+  padding: 18px 0 !important;
+  border-top: 1px solid rgba(45, 37, 32, 0.1) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ss-android-product-detail .sheet-section h3 {
+  margin: 0 0 8px !important;
+  color: #2d2520 !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+}
+
+.ss-android-product-detail .modern-detail-desc {
+  margin: 0 !important;
+  color: #5d524a !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.ss-android-product-detail .modern-benefit-list,
+.ss-android-product-detail .modern-bullet-list {
+  display: grid !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+.ss-android-product-detail .modern-benefit-list li,
+.ss-android-product-detail .modern-bullet-list li {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  color: #5d524a !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+.ss-android-product-detail .seller-profile-card,
+.ss-android-product-detail .trust-badge-premium {
+  margin: 2px 0 16px !important;
+  padding: 14px !important;
+  border-radius: 16px !important;
+}
+
+.ss-android-product-detail .modern-action-bar {
+  position: fixed !important;
+  z-index: 100 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  display: flex !important;
+  gap: 10px !important;
+  padding: 12px 16px !important;
+  border-top: 1px solid rgba(45, 37, 32, 0.1) !important;
+  background: rgba(255, 253, 250, 0.98) !important;
+  box-shadow: 0 -8px 24px rgba(40, 30, 22, 0.1) !important;
+}
+
+.ss-android-product-detail .modern-btn {
+  display: inline-flex !important;
+  min-height: 52px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  border-radius: 14px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+
+.ss-android-product-detail .modern-btn-primary {
+  flex: 1 !important;
+  border: 1px solid #1d6846 !important;
+  background: #1d6846 !important;
+  color: #fff !important;
+}
+
+.ss-android-product-detail .modern-btn-secondary {
+  flex: 0 0 52px !important;
+  min-width: 52px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(212, 80, 10, 0.25) !important;
+  background: rgba(212, 80, 10, 0.08) !important;
+  color: #d4500a !important;
+}
+
+.ss-android-product-detail .modern-btn-secondary span { display: none !important; }

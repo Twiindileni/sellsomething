@@ -7,8 +7,8 @@ const cors = require("cors");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 const { createClient } = require("@supabase/supabase-js");
-const { sendPushToUser, firePush } = require("./push");
-const { isResendConfigured, getFromEmail, sendVerificationRequestEmail, sendVerificationConfirmationEmail, sendVerificationApprovedEmail, sendVerificationRejectedEmail, getVerificationAdminEmails, pickUserEmail } = require("./email");
+const { sendPushToUser, sendPushToAll, firePush } = require("./push");
+const { isResendConfigured, getFromEmail, sendVerificationRequestEmail, sendVerificationConfirmationEmail, sendVerificationApprovedEmail, sendVerificationRejectedEmail, sendAdminNoticeEmail, getVerificationAdminEmails, pickUserEmail } = require("./email");
 const { resolveRejectionReason } = require("./verificationReasons");
 const {
   SEGMENTS,
@@ -2400,6 +2400,181 @@ app.post("/api/admin/mail/send-user", async (req, res) => {
       message,
     });
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/notifications", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ error: "Log in to view notifications." });
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) return res.status(401).json({ error: "Session expired." });
+
+    const { data, error } = await userClient
+      .from("user_notifications")
+      .select("id, title, body, url, type, read_at, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) {
+      if (error.code === "42P01") return res.json([]);
+      throw error;
+    }
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/notifications/read-all", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ error: "Log in required." });
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) return res.status(401).json({ error: "Session expired." });
+
+    const { error } = await userClient
+      .from("user_notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("user_id", user.id)
+      .is("read_at", null);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/notifications/:id/read", async (req, res) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return res.status(401).json({ error: "Log in required." });
+  try {
+    const userClient = supabaseForUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) return res.status(401).json({ error: "Session expired." });
+
+    const { data, error } = await userClient
+      .from("user_notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", req.params.id)
+      .eq("user_id", user.id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/admin/notifications", async (req, res) => {
+  try {
+    const auth = await requireAdmin(req, res);
+    if (!auth) return;
+    const db = getSupabaseAdmin() || auth.db;
+
+    const title = (req.body?.title || "").trim().slice(0, 120);
+    const body = (req.body?.body || "").trim().slice(0, 2000);
+    const url = (req.body?.url || "/dashboard").trim() || "/dashboard";
+    const userId = req.body?.user_id || null;
+    const sendPush = req.body?.push !== false;
+    const sendEmail = !!req.body?.email;
+    const audience = req.body?.audience === "all" ? "all" : "user";
+
+    if (!title || !body) {
+      return res.status(400).json({ error: "Title and message are required." });
+    }
+    if (audience === "user" && !userId) {
+      return res.status(400).json({ error: "Pick a user, or send to everyone." });
+    }
+    if (sendEmail && !isResendConfigured()) {
+      return res.status(503).json({ error: "Email is not configured. Uncheck email or set RESEND_API_KEY." });
+    }
+
+    let targets = [];
+    if (audience === "all") {
+      const { data, error } = await db.from("profiles").select("id, email, full_name");
+      if (error) throw error;
+      targets = data || [];
+    } else {
+      const { data, error } = await db
+        .from("profiles")
+        .select("id, email, full_name")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return res.status(404).json({ error: "User not found." });
+      targets = [data];
+    }
+
+    const rows = targets.map((t) => ({
+      user_id: t.id,
+      title,
+      body,
+      url,
+      type: "admin",
+    }));
+
+    let inAppCount = 0;
+    for (let i = 0; i < rows.length; i += 100) {
+      const chunk = rows.slice(i, i + 100);
+      const { error } = await db.from("user_notifications").insert(chunk);
+      if (error) {
+        if (error.code === "42P01") {
+          return res.status(503).json({
+            error: "Run supabase/user_notifications_migration.sql in Supabase SQL Editor first.",
+          });
+        }
+        throw error;
+      }
+      inAppCount += chunk.length;
+    }
+
+    let pushSent = 0;
+    if (sendPush) {
+      try {
+        const result = audience === "all"
+          ? await sendPushToAll(db, { title, body, url, type: "admin" })
+          : await sendPushToUser(db, userId, { title, body, url, type: "admin" });
+        pushSent = result?.sent || 0;
+      } catch (pushErr) {
+        console.warn("[notify] push failed:", pushErr.message);
+      }
+    }
+
+    let emailSent = 0;
+    let emailFailed = 0;
+    if (sendEmail) {
+      for (const t of targets) {
+        if (!t.email?.includes("@")) continue;
+        try {
+          await sendAdminNoticeEmail({
+            to: t.email,
+            name: t.full_name,
+            title,
+            body,
+          });
+          emailSent += 1;
+        } catch (mailErr) {
+          emailFailed += 1;
+          console.warn("[notify] email failed:", t.email, mailErr.message);
+        }
+      }
+    }
+
+    res.json({
+      ok: true,
+      audience,
+      recipients: targets.length,
+      inApp: inAppCount,
+      pushSent,
+      emailSent,
+      emailFailed,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

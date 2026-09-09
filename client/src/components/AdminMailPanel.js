@@ -8,6 +8,7 @@ import {
   runAdminMailCampaign,
   getAdminUsers,
   sendAdminMailToUser,
+  sendAdminNotification,
 } from "../services/api";
 import { ADMIN_MAIL_TEMPLATES } from "../config/adminMailTemplates";
 
@@ -43,15 +44,25 @@ export default function AdminMailPanel({ accessToken }) {
     setLoading(true);
     setError(null);
     try {
-      const [statusRes, previewRes, logRes, usersRes] = await Promise.all([
-        getAdminMailStatus(accessToken),
-        getAdminMailPreview(accessToken),
-        getAdminMailLog(accessToken),
+      const statusRes = await getAdminMailStatus(accessToken);
+      setStatus(statusRes.data);
+
+      const [previewRes, logRes, usersRes] = await Promise.all([
+        getAdminMailPreview(accessToken).catch((err) => ({ error: err })),
+        getAdminMailLog(accessToken).catch((err) => ({ error: err })),
         getAdminUsers(accessToken).catch(() => ({ data: [] })),
       ]);
-      setStatus(statusRes.data);
-      setPreview(previewRes.data);
-      setLog(logRes.data || []);
+
+      if (previewRes.error) {
+        setPreview(null);
+      } else {
+        setPreview(previewRes.data);
+      }
+      if (logRes.error) {
+        setLog([]);
+      } else {
+        setLog(logRes.data || []);
+      }
       setUsers((usersRes.data || []).filter((u) => u.email));
     } catch (err) {
       setError(err.response?.data?.error || err.message || "Failed to load mail panel.");

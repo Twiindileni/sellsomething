@@ -8,4 +8,16 @@
         <item name="android:navigationBarColor">@color/charcoal</item>
         <item name="android:windowBackground">@color/smoke</item>
     </style>
+
+    <style name="Theme.SplashCustom" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/smoke</item>
+        <item name="android:navigationBarColor">@color/smoke</item>
+        <item name="android:windowBackground">@color/smoke</item>
+    </style>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/smoke</item>
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="postSplashScreenTheme">@style/Theme.SplashCustom</item>
+    </style>
 </resources>

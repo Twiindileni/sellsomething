@@ -23,8 +23,10 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.content.FileProvider
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -295,6 +297,99 @@ class MainActivity : AppCompatActivity() {
             """
             (function(){
               window.__SELLSOMETHING_NATIVE_APP__=true;
+            })();
+            """.trimIndent(),
+            null,
+        )
+        injectAndroidProductDetailStyle()
+    }
+
+    /**
+     * The app is a WebView wrapper, so the live site can otherwise lag behind a
+     * mobile UI update. Apply the focused product treatment in the Android app
+     * itself whenever a listing is open.
+     */
+    private fun injectAndroidProductDetailStyle() {
+        val css = resources.openRawResource(R.raw.android_product_detail)
+            .bufferedReader()
+            .use { it.readText() }
+        val safeCss = JSONObject.quote(css)
+
+        webView.evaluateJavascript(
+            """
+            (function () {
+              function applyProductDetail() {
+                if (!/^\\/listing\\/[^/]+\\/?$/.test(window.location.pathname)) {
+                  document.body.classList.remove('ss-android-product-detail');
+                  return;
+                }
+
+                document.body.classList.add('ss-android-product-detail');
+
+                var styleId = 'ss-android-product-detail-style';
+                var style = document.getElementById(styleId);
+                if (!style) {
+                  style = document.createElement('style');
+                  style.id = styleId;
+                  style.textContent = $safeCss;
+                  document.head.appendChild(style);
+                }
+
+                function addTopActions() {
+                  var gallery = document.querySelector('.modern-gallery-container');
+                  if (!gallery || gallery.querySelector('.detail-top-actions, .android-detail-top-actions')) return;
+
+                  var actions = document.createElement('div');
+                  actions.className = 'android-detail-top-actions';
+
+                  var back = document.createElement('button');
+                  back.type = 'button';
+                  back.className = 'android-detail-action';
+                  back.setAttribute('aria-label', 'Back to listings');
+                  back.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
+                  back.addEventListener('click', function () {
+                    if (window.history.length > 1) window.history.back();
+                    else window.location.assign('/');
+                  });
+
+                  var favourite = document.createElement('button');
+                  favourite.type = 'button';
+                  favourite.className = 'android-detail-action android-detail-save';
+                  favourite.setAttribute('aria-label', 'Save listing');
+                  favourite.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>';
+                  favourite.addEventListener('click', function () {
+                    var original = gallery.querySelector('.floating-like-btn');
+                    if (original) original.click();
+                  });
+
+                  actions.appendChild(back);
+                  actions.appendChild(favourite);
+                  gallery.appendChild(actions);
+                }
+
+                addTopActions();
+                if (!window.__ssAndroidProductObserver) {
+                  window.__ssAndroidProductObserver = new MutationObserver(addTopActions);
+                  window.__ssAndroidProductObserver.observe(document.body, { childList: true, subtree: true });
+                }
+              }
+
+              applyProductDetail();
+              if (!window.__ssAndroidRouteHook) {
+                window.__ssAndroidRouteHook = true;
+                var scheduleProductDetail = function () {
+                  window.setTimeout(applyProductDetail, 0);
+                };
+                ['pushState', 'replaceState'].forEach(function (method) {
+                  var original = window.history[method];
+                  window.history[method] = function () {
+                    var result = original.apply(this, arguments);
+                    scheduleProductDetail();
+                    return result;
+                  };
+                });
+                window.addEventListener('popstate', scheduleProductDetail);
+              }
             })();
             """.trimIndent(),
             null,

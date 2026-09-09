@@ -1,0 +1,359 @@
+/* MODERN APP-LIKE BOTTOM SHEET DESIGN */
+
+.modern-detail-page {
+  padding: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #f6f3ef; /* Slightly off-white background matching the image top */
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Floating Top Nav (Back & Like buttons) */
+.floating-top-nav {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  z-index: 50;
+}
+
+.floating-icon-btn {
+  background: white;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  color: #333;
+  transition: transform 0.2s;
+}
+
+.floating-icon-btn:active {
+  transform: scale(0.95);
+}
+
+.floating-icon-btn.liked {
+  color: #e63946;
+}
+
+.modern-detail-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+/* LEFT/TOP: Gallery Container */
+.modern-gallery-container {
+  width: 100%;
+  height: 50vh;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Ensure the inner gallery component fills the height nicely */
+.modern-gallery-container .listing-gallery {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
+/* RIGHT/BOTTOM: Bottom Sheet Card */
+.bottom-sheet-card {
+  background: white;
+  border-top-left-radius: 32px;
+  border-top-right-radius: 32px;
+  margin-top: -32px; /* Pulls it up over the image */
+  z-index: 10;
+  position: relative;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.modern-info-scrollable {
+  padding: 2rem 1.5rem 6rem 1.5rem; /* extra bottom padding for floating bar */
+}
+
+.card-top-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.modern-category-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #f0f4f8;
+  color: #555;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.time-ago-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #888;
+}
+
+.modern-detail-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #222;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.2;
+}
+
+.modern-detail-price {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1b5e20; /* Dark green matching mockup */
+  margin-bottom: 1.5rem;
+}
+
+.section-divider {
+  height: 1px;
+  background: #eee;
+  margin: 1.5rem 0;
+}
+
+.section-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.75rem;
+}
+
+.modern-detail-desc {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #555;
+  margin-bottom: 1.5rem;
+}
+
+/* Meta Grid */
+.modern-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.modern-meta-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.meta-icon {
+  color: #1b5e20; /* Green icon */
+  margin-top: 2px;
+}
+
+.meta-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.meta-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #222;
+}
+
+/* Seller Profile Card */
+.seller-profile-card {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+}
+
+.seller-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+}
+
+.seller-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.seller-label {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.seller-name {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #222;
+}
+
+/* Trust Badge */
+.trust-badge-premium {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  color: #166534;
+  margin-bottom: 1.5rem;
+}
+
+.trust-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.trust-content strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.trust-content p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+
+/* Sticky Action Bar (Floating Pill) */
+.modern-action-bar {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  right: 1.5rem;
+  background: white;
+  padding: 0.75rem;
+  border-radius: 100px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  display: flex;
+  gap: 0.75rem;
+  z-index: 100;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.modern-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 100px; /* Pill shape */
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+}
+
+.modern-btn:active {
+  transform: scale(0.98);
+}
+
+.modern-btn-primary {
+  background: #1b5e20; /* Dark green matching mockup */
+  color: white;
+  border: none;
+}
+
+.modern-btn-secondary {
+  background: #f0f4f8;
+  color: #1b5e20;
+  border: none;
+  flex: 0.5; /* Slightly smaller than primary */
+}
+
+.action-bar-notice {
+  text-align: center;
+  width: 100%;
+  color: #888;
+  font-weight: 500;
+  padding: 0.5rem 0;
+}
+
+/* Desktop Styles */
+@media (min-width: 768px) {
+  .modern-detail-page {
+    display: flex;
+    flex-direction: row;
+    padding: 2rem;
+    gap: 2rem;
+    background: white;
+  }
+  
+  .floating-top-nav {
+    display: none; /* Let standard nav handle desktop */
+  }
+
+  .modern-detail-grid {
+    flex-direction: row;
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .modern-gallery-container {
+    width: 50%;
+    height: auto;
+    position: sticky;
+    top: 80px;
+    border-radius: 24px;
+  }
+
+  .bottom-sheet-card {
+    width: 50%;
+    margin-top: 0;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .modern-info-scrollable {
+    padding: 0 0 2rem 0;
+  }
+
+  .modern-action-bar {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    max-width: none;
+    border-radius: 16px;
+    padding: 1rem 0;
+    box-shadow: none;
+    background: transparent;
+  }
+}

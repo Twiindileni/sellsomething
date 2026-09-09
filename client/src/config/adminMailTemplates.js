@@ -2,6 +2,16 @@
 
 export const ADMIN_MAIL_TEMPLATES = [
   {
+    id: "android_launch",
+    label: "📢 Announce Android App Launch",
+    subject: "Sell Something is now on Android!",
+    message: `We're thrilled to announce that the Sell Something app is officially live on Android!
+
+Experience a faster, smoother way to buy and sell across Namibia. Enjoy full-screen image galleries, instant push notifications for buyer/seller chats, and our secure escrow system—right from your pocket.
+
+Download it today and let us know what you think!`,
+  },
+  {
     id: "welcome",
     label: "Welcome to Sell Something",
     subject: "Welcome to Sell Something",
