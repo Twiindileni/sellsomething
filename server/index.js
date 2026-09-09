@@ -1345,6 +1345,26 @@ app.post("/api/orders", async (req, res) => {
     }]).select().single();
 
     if (error) throw error;
+
+    // 🔔 Notify seller: new order placed
+    if (resolvedSellerId) {
+      const db = getSupabaseAdmin() || supabase;
+      firePush(sendPushToUser(db, resolvedSellerId, {
+        title: "New order received! 🛍️",
+        body: `Someone just placed an order for "${data.product_title || "your product"}". Check your dashboard.`,
+        url: "/dashboard",
+        type: "order",
+      }));
+    }
+
+    // 🔔 Confirm to buyer: order placed successfully
+    firePush(sendPushToUser(getSupabaseAdmin() || supabase, user.id, {
+      title: "Order placed! ✅",
+      body: `Your order for "${data.product_title || "the product"}" is pending payment confirmation.`,
+      url: "/dashboard",
+      type: "order",
+    }));
+
     res.status(201).json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1749,13 +1769,21 @@ app.put("/api/orders/:id/admin-status", async (req, res) => {
     if (status === "payment_received") {
       const { data: fullOrder } = await auth.db
         .from("orders")
-        .select("product_title, seller_id")
+        .select("product_title, seller_id, buyer_id")
         .eq("id", req.params.id)
         .maybeSingle();
+      // Notify seller: start delivery
       notifyOrderUpdate(fullOrder || {}, {
-        title: "Payment confirmed",
-        body: `Start delivery for ${fullOrder?.product_title || "your sale"}`,
+        title: "Payment confirmed 💰",
+        body: `Start delivery for "${fullOrder?.product_title || "your sale"}"`,
         targetUserId: fullOrder?.seller_id,
+      });
+      // Notify buyer: payment received
+      notifyOrderUpdate(fullOrder || {}, {
+        title: "Payment confirmed! ✅",
+        body: `Your payment for "${fullOrder?.product_title || "your order"}" has been received. The seller will ship soon.`,
+        targetUserId: fullOrder?.buyer_id,
+        url: "/dashboard",
       });
     } else if (status === "refunded") {
       const { data: fullOrder } = await auth.db
