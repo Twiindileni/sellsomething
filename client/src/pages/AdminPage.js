@@ -796,6 +796,150 @@ export default function AdminPage() {
                 </div>
               </div>
               <AdminVerificationDetails profile={userDetail.profile} />
+
+              <div className="admin-kpi-row" style={{ marginTop: '2rem' }}>
+                <div className="admin-kpi-card">
+                  <span className="admin-kpi-label">Listings</span>
+                  <span className="admin-kpi-value">{userDetail.listings.length}</span>
+                </div>
+                <div className="admin-kpi-card info">
+                  <span className="admin-kpi-label">Purchases</span>
+                  <span className="admin-kpi-value">{userDetail.purchases.length}</span>
+                </div>
+                <div className="admin-kpi-card success">
+                  <span className="admin-kpi-label">Sales</span>
+                  <span className="admin-kpi-value">{userDetail.sales.length}</span>
+                </div>
+                <div className="admin-kpi-card warn">
+                  <span className="admin-kpi-label">Conversations</span>
+                  <span className="admin-kpi-value">{userDetail.conversations.length}</span>
+                </div>
+              </div>
+
+              <section className="admin-user-section" style={{ marginTop: '2rem' }}>
+                <h3 className="admin-user-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--charcoal)', marginBottom: '1rem', fontSize: '1.2rem' }}>
+                  <ShoppingCart size={20} strokeWidth={2} /> Purchases (as buyer)
+                </h3>
+                {userDetail.purchases.length === 0 ? (
+                  <p style={{ color: 'var(--muted)' }}>No purchases.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {userDetail.purchases.map((o) => <MiniOrderRow key={o.id} order={o} />)}
+                  </div>
+                )}
+              </section>
+
+              <section className="admin-user-section" style={{ marginTop: '2rem' }}>
+                <h3 className="admin-user-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--charcoal)', marginBottom: '1rem', fontSize: '1.2rem' }}>
+                  <Briefcase size={20} strokeWidth={2} /> Sales (as seller)
+                </h3>
+                {userDetail.sales.length === 0 ? (
+                  <p style={{ color: 'var(--muted)' }}>No sales.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {userDetail.sales.map((o) => <MiniOrderRow key={o.id} order={o} />)}
+                  </div>
+                )}
+              </section>
+
+              <section className="admin-user-section" style={{ marginTop: '2rem' }}>
+                <h3 className="admin-user-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--charcoal)', marginBottom: '1rem', fontSize: '1.2rem' }}>
+                  <Package size={20} strokeWidth={2} /> Listings
+                </h3>
+                {userDetail.listings.length === 0 ? (
+                  <p style={{ color: 'var(--muted)' }}>No listings.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {userDetail.listings.map((p) => (
+                      <div key={p.id} className="admin-mini-order" style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--smoke)', borderRadius: '12px' }}>
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--charcoal)' }}>{p.title}</div>
+                          <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                            {p.category} · {p.location || "—"} · posted {formatDate(p.created_at)}
+                          </div>
+                        </div>
+                        <div style={{ fontWeight: 700, color: 'var(--charcoal)' }}>{formatPrice(p.price)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="admin-user-section" style={{ marginTop: '2rem' }}>
+                <h3 className="admin-user-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--charcoal)', marginBottom: '1rem', fontSize: '1.2rem' }}>
+                  <MessageCircle size={20} strokeWidth={2} /> Conversations
+                </h3>
+                {userDetail.messagesAvailable === false && (
+                  <div className="error-banner" style={{ marginBottom: "1rem", padding: '1rem', background: 'rgba(212,80,10,0.1)', color: 'var(--accent)', borderRadius: '8px' }}>
+                    Full message access requires SUPABASE_SERVICE_ROLE_KEY on the server.
+                  </div>
+                )}
+                {userDetail.conversations.length === 0 ? (
+                  <p style={{ color: 'var(--muted)' }}>No conversations.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {userDetail.conversations.map((t, idx) => {
+                      const contextId = t.employee?.id || t.product?.id || idx;
+                      const key = `${contextId}_${t.otherUser.id}`;
+                      const contextLabel = t.employee ? `${t.employee.name} (${t.employee.profession})` : t.product?.title;
+                      const isOpen = !!openThreads[key];
+                      const flagged = t.messages.some((m) => isSuspicious(m.content));
+                      return (
+                        <div key={key} className={`admin-chat-thread ${flagged ? "flagged" : ""}`} style={{ border: '1px solid var(--dune)', borderRadius: '12px', overflow: 'hidden' }}>
+                          <button
+                            type="button"
+                            className="admin-chat-thread-header"
+                            onClick={() => setOpenThreads((prev) => ({ ...prev, [key]: !isOpen }))}
+                            style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: flagged ? 'rgba(212,80,10,0.05)' : 'var(--smoke)', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                          >
+                            <div className="admin-chat-thread-title">
+                              <strong style={{ color: 'var(--charcoal)' }}>{t.otherUser.full_name || t.otherUser.email || "Unknown user"}</strong>
+                              <span style={{ color: 'var(--muted)', fontSize: 13 }}> · about "{contextLabel}"</span>
+                              {flagged && (
+                                <span style={{ color: 'var(--accent)', fontSize: 12, marginLeft: '8px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <AlertTriangle size={12} strokeWidth={2} /> possible off-platform deal
+                                </span>
+                              )}
+                            </div>
+                            <span style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>
+                              {t.messages.length} message{t.messages.length !== 1 ? "s" : ""} {isOpen ? "▲" : "▼"}
+                            </span>
+                          </button>
+                          {isOpen && (
+                            <div className="admin-chat-messages" style={{ padding: '1rem', background: '#fff', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              {t.messages.map((m) => {
+                                const fromThisUser = m.sender_id === userDetail.profile.id;
+                                const suspicious = isSuspicious(m.content);
+                                return (
+                                  <div
+                                    key={m.id}
+                                    style={{ 
+                                      padding: '0.8rem', 
+                                      borderRadius: '8px', 
+                                      background: suspicious ? 'rgba(212,80,10,0.1)' : (fromThisUser ? 'var(--smoke)' : 'var(--white)'),
+                                      alignSelf: fromThisUser ? 'flex-end' : 'flex-start',
+                                      maxWidth: '80%',
+                                      borderLeft: suspicious ? '3px solid var(--accent)' : (fromThisUser ? 'none' : '3px solid var(--earth)'),
+                                      boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+                                    }}
+                                  >
+                                    <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      {fromThisUser ? (userDetail.profile.full_name || userDetail.profile.email) : (t.otherUser.full_name || t.otherUser.email)}
+                                      {" · "}{formatDateTime(m.created_at)}
+                                      {suspicious && <AlertTriangle size={12} color="var(--accent)" />}
+                                    </div>
+                                    <div style={{ color: 'var(--charcoal)', fontSize: 14 }}>{m.content}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
             </div>
           </div>
         )}
