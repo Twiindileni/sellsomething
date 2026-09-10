@@ -236,12 +236,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadInitialUrl(intent: Intent?) {
         val target = intent?.getStringExtra(EXTRA_OPEN_URL) ?: intent?.data?.toString()
-        when {
-            target != null -> {
-                val fullUrl = if (target.startsWith("http")) target else "$SITE_URL$target"
-                webView.loadUrl(fullUrl)
-            }
-            webView.url.isNullOrBlank() -> webView.loadUrl(SITE_URL)
+        if (target != null) {
+            val fullUrl = if (target.startsWith("http")) target else "$SITE_URL$target"
+            webView.loadUrl(fullUrl)
+        } else if (webView.url.isNullOrBlank() || webView.url == "about:blank") {
+            webView.loadUrl(SITE_URL)
         }
     }
 
@@ -305,6 +304,7 @@ class MainActivity : AppCompatActivity() {
             """
             (function(){
               window.__SELLSOMETHING_NATIVE_APP__=true;
+              document.body.classList.add('is-native-app');
             })();
             """.trimIndent(),
             null,
@@ -327,7 +327,7 @@ class MainActivity : AppCompatActivity() {
             """
             (function () {
               function applyProductDetail() {
-                if (!/^\\/listing\\/[^/]+\\/?$/.test(window.location.pathname)) {
+                if (!/^\/listing\/[^\/]+\/?$/.test(window.location.pathname)) {
                   document.body.classList.remove('ss-android-product-detail');
                   return;
                 }

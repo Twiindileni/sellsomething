@@ -27,5 +27,8 @@
       "last 1 chrome version",
       "last 1 firefox version"
     ]
+  },
+  "devDependencies": {
+    "puppeteer": "^25.10.0"
   }
 }

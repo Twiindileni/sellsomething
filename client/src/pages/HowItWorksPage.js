@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import InfoPageLayout from "../components/InfoPageLayout";
+import SEO from "../components/SEO";
 import { COMPANY } from "../config/site";
 import { PAYMENT } from "../config/payment";
 

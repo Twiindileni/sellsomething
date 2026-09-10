@@ -3,24 +3,27 @@
    ========================================================================== */
 
 /* Hide the bottom navigation bar and mobile tools on desktop */
-.mobile-bottom-nav,
-.mobile-header-tools {
+.is-native-app .mobile-bottom-nav,
+.is-native-app .mobile-header-tools {
+  display: flex !important;
+}
+
+/* Hide desktop nav elements ONLY in native app */
+.is-native-app .site-footer,
+.is-native-app .menu-toggle,
+.is-native-app .navbar-nav,
+.is-native-app .nav-user-toolbar {
   display: none !important;
 }
 
 @media (max-width: 768px) {
   /* 1. App Shell adjustments for bottom nav */
-  .app {
+  .is-native-app .app {
     padding-bottom: calc(65px + env(safe-area-inset-bottom, 20px));
   }
 
-  /* Hide footer completely on mobile (WebView/App feel) */
-  .site-footer {
-    display: none !important;
-  }
-
   /* 2. Slim Mobile Header */
-  .navbar {
+  .is-native-app .navbar {
     height: 60px;
     padding: 0 1rem;
     position: fixed;
@@ -30,36 +33,25 @@
     border-bottom: 1px solid var(--border-light);
   }
   
-  /* Show mobile tools */
-  .mobile-header-tools {
-    display: flex !important;
-  }
-  
-  /* Hide the hamburger menu toggle, desktop nav tools, and user toolbar */
-  .menu-toggle,
-  .navbar-nav,
-  .nav-user-toolbar {
-    display: none !important;
-  }
-  
   /* Make the logo slightly smaller for the slim header */
-  .brand-logo-text--nav {
+  .is-native-app .brand-logo-text--nav {
     font-size: 1.25rem !important;
     color: var(--ink) !important;
   }
-  .brand-logo-text span {
-    background: var(--accent) !important;
+  .is-native-app .brand-logo-text span {
+    background: none !important;
+    color: var(--accent) !important;
     -webkit-text-fill-color: var(--accent) !important;
   }
-  .brand-logo-mark--nav {
+  .is-native-app .brand-logo-mark--nav {
     height: 1.8rem !important;
   }
-  .brand-logo--lockup {
+  .is-native-app .brand-logo--lockup {
     gap: 0.35rem !important;
   }
 
   /* 3. Bottom Navigation Bar */
-  .mobile-bottom-nav {
+  .is-native-app .mobile-bottom-nav {
     display: flex !important;
     position: fixed;
     bottom: 0;
@@ -69,16 +61,18 @@
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border-top: 1px solid var(--border-light);
+    border-top: none;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
     z-index: 9999;
     justify-content: space-around;
     align-items: flex-start;
     padding-top: 8px;
     padding-bottom: env(safe-area-inset-bottom, 20px);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
   }
 
-  .mob-nav-item {
+  .is-native-app .mob-nav-item {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -97,25 +91,25 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .mob-nav-item:active {
+  .is-native-app .mob-nav-item:active {
     opacity: 0.7;
   }
 
-  .mob-nav-item svg {
+  .is-native-app .mob-nav-item svg {
     transition: transform 0.2s ease;
   }
 
-  .mob-nav-active {
+  .is-native-app .mob-nav-active {
     color: var(--accent);
   }
 
-  .mob-nav-active svg {
+  .is-native-app .mob-nav-active svg {
     stroke: var(--accent);
     transform: translateY(-2px);
   }
 
   /* Floating Action Button style for Sell */
-  .mob-nav-sell {
+  .is-native-app .mob-nav-sell {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -135,7 +129,7 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .mob-nav-sell svg {
+  .is-native-app .mob-nav-sell svg {
     background: var(--accent);
     color: var(--white);
     border-radius: 50%;
@@ -147,110 +141,114 @@
     margin-bottom: 2px;
   }
 
-  .mob-nav-sell:active svg {
+  .is-native-app .mob-nav-sell:active svg {
     transform: scale(0.95);
     box-shadow: 0 2px 10px rgba(212, 80, 10, 0.4);
   }
 
   /* 4. Mobile Grid & Hero Optmizations */
-  .products-grid {
+  .is-native-app .products-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.75rem !important;
   }
   
-  .products-section {
+  .is-native-app .products-section {
     padding: 1rem 1rem 3rem !important;
   }
   
-  .card-body {
+  .is-native-app .card-body {
     padding: 0.75rem !important;
     gap: 0.5rem !important;
   }
   
-  .card-title {
+  .is-native-app .card-title {
     font-size: 0.95rem !important;
     line-height: 1.2;
     -webkit-line-clamp: 1;
   }
   
-  .card-price {
+  .is-native-app .card-price {
     font-size: 1.1rem !important;
   }
   
-  .card-desc {
+  .is-native-app .card-desc {
     display: none !important; /* Hide description on mobile to save space */
   }
 
-  .hero {
+  .is-native-app .hero {
     padding: 5rem 1rem 2rem !important; /* Extra top padding for fixed header */
     background: var(--smoke);
   }
-  .hero::before {
+  .is-native-app .hero::before {
     display: none;
   }
   
-  .hero-title {
+  .is-native-app .hero-title {
     font-size: 1.75rem !important;
     margin-bottom: 0.5rem !important;
     color: var(--ink) !important;
   }
   
-  .hero-sub {
+  .is-native-app .hero-sub {
     font-size: 0.95rem !important;
     margin-bottom: 1.5rem !important;
     color: var(--muted) !important;
   }
 
-  .search-wrap {
+  .is-native-app .search-wrap {
     padding: 0.25rem !important;
     border-radius: 12px !important;
   }
   
-  .search-input {
+  .is-native-app .search-input {
     padding: 0.5rem 1rem !important;
     font-size: 0.95rem !important;
   }
   
-  .search-btn {
+  .is-native-app .search-btn {
     padding: 0.5rem 1rem !important;
     font-size: 0.9rem !important;
     border-radius: 8px !important;
   }
 
-  .categories-section {
+  .is-native-app .categories-section {
     padding: 1rem 1rem 0 !important;
   }
   
-  .category-strip {
+  .is-native-app .category-strip {
     justify-content: flex-start !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
-    padding-bottom: 10px !important;
+    padding: 12px !important;
+    background: var(--white);
+    border-radius: 24px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none; /* Firefox */
   }
-  .category-strip::-webkit-scrollbar {
+  .is-native-app .category-strip::-webkit-scrollbar {
     display: none;
   }
-  .cat-btn {
+  .is-native-app .cat-btn {
     white-space: nowrap;
     padding: 0.4rem 1rem !important;
     font-size: 0.85rem !important;
   }
 
   /* Remove hover effects on mobile for a native feel */
-  .product-card:hover {
+  .is-native-app .product-card:hover {
     transform: none !important;
     box-shadow: var(--shadow-glass) !important;
     border-color: var(--border-light) !important;
   }
   
-  .product-card:active {
+  .is-native-app .product-card:active {
     background-color: var(--smoke);
     transform: scale(0.98) !important;
   }
 
-  .like-btn:hover {
+  .is-native-app .like-btn:hover {
     transform: none !important;
   }
 }
+

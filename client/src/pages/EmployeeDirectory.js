@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { getEmployees } from "../services/api";
 import EmployeeCard from "../components/EmployeeCard";
 import { useAuth } from "../context/AuthContext";
+import SEO from "../components/SEO";
 import "./EmployeeDirectory.css";
 
 const CATEGORIES = [

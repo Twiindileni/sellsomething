@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Lock, MessageCircle, CheckCircle2, Building2 } from "lucide-react";
 import InfoPageLayout from "../components/InfoPageLayout";
+import SEO from "../components/SEO";
 import { COMPANY } from "../config/site";
 
 const VALUES = [

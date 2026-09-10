@@ -11,6 +11,9 @@ export default function MobileNav() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // If the user said "design the android app only", this restricts it to the WebView.
+  if (!window.__SELLSOMETHING_NATIVE_APP__) return null;
+
   function handleSell() {
     if (user) {
       navigate("/sell");
