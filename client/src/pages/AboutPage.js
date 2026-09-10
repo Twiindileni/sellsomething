@@ -29,6 +29,8 @@ const VALUES = [
 
 export default function AboutPage() {
   return (
+    <>
+      <SEO url="/about" title="About Us" description="SellSomething is Namibia's trusted online marketplace operated by a registered local business. Safe escrow payments, free ads." />
     <InfoPageLayout
       title="About Sell Something"
       subtitle="A Namibian marketplace you can trust operated by a registered local business."
@@ -100,5 +102,7 @@ export default function AboutPage() {
         </p>
       </section>
     </InfoPageLayout>
+    </>
   );
 }
+

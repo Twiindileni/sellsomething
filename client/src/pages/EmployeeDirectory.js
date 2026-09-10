@@ -35,6 +35,11 @@ export default function EmployeeDirectory() {
 
   return (
     <div className="directory-page">
+      <SEO
+        url="/professionals"
+        title="Find Professionals in Namibia"
+        description="Browse verified service providers, professionals and freelancers in Namibia. Read reviews and hire with confidence on SellSomething."
+      />
       <header className="directory-hero">
         <h1 className="directory-hero-title">Find Trusted Professionals</h1>
         <p className="directory-hero-subtitle">
@@ -94,3 +99,4 @@ export default function EmployeeDirectory() {
     </div>
   );
 }
+

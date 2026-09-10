@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "./context/AuthContext";
 import { ProductProvider } from "./context/ProductContext";
 import Navbar from "./components/Navbar";
@@ -27,6 +28,7 @@ import "./App.css";
 
 export default function App() {
   return (
+    <HelmetProvider>
     <AuthProvider>
       <ProductProvider>
         <Router>
@@ -84,5 +86,6 @@ export default function App() {
         </Router>
       </ProductProvider>
     </AuthProvider>
+    </HelmetProvider>
   );
 }

@@ -22,6 +22,8 @@ const SELLER_STEPS = [
 
 export default function HowItWorksPage() {
   return (
+    <>
+      <SEO url="/how-it-works" title="How Escrow Works" description="Learn how SellSomething's escrow system keeps your money safe until you receive your item. Buy and sell with confidence in Namibia." />
     <InfoPageLayout
       title="How Escrow Works"
       subtitle="Your money stays safe until you're happy with your purchase."
@@ -96,5 +98,7 @@ export default function HowItWorksPage() {
         </p>
       </section>
     </InfoPageLayout>
+    </>
   );
 }
+

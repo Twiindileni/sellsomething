@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { SearchX } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
 import ProductCard from "../components/ProductCard";
+import SEO from "../components/SEO";
 
 export default function Home() {
   const { products, categories, loading, error, fetchProducts, fetchCategories } = useProducts();
@@ -30,6 +31,11 @@ export default function Home() {
 
   return (
     <>
+      <SEO
+        url="/"
+        title="Buy &amp; Sell Anything in Namibia"
+        description="Namibia's free online marketplace. Browse thousands of listings for products, services, vehicles and property. Safe escrow payments."
+      />
       {/* Hero */}
       <section className="hero">
         <h1 className="hero-title">

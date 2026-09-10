@@ -13,6 +13,7 @@ import {
   ChevronRight, Star, Truck, RotateCcw, Lock, BadgeCheck
 } from "lucide-react";
 import "./ListingDetail.css";
+import SEO from "../components/SEO";
 
 const CATEGORY_ICONS = {
   Electronics: Smartphone, Vehicles: CarFront, Furniture: Sofa,
@@ -143,6 +144,13 @@ export default function ListingDetail() {
 
   return (
     <div className="pdp-page">
+      <SEO
+        title={`${product.title} for sale in Namibia`}
+        description={`${product.description ? product.description.slice(0, 150) : product.title} — N$ ${Number(product.price).toLocaleString()}. Buy safely with escrow on SellSomething Namibia.`}
+        image={images[0] || undefined}
+        url={`/listing/${product.id}`}
+        type="product"
+      />
       {/* Breadcrumb */}
       <nav className="pdp-breadcrumb">
         <Link to="/">Home</Link>
