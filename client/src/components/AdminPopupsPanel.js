@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import supabase from "../lib/supabase";
+import { supabase } from "../lib/supabase";
+import { getProducts, getEmployees } from "../services/api";
 import { LayoutTemplate, Plus, CheckCircle, Trash2, Edit2 } from "lucide-react";
 
 export default function AdminPopupsPanel() {
@@ -9,6 +10,54 @@ export default function AdminPopupsPanel() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [currentPopup, setCurrentPopup] = useState(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  async function handleSearch(e) {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const [prodRes, empRes] = await Promise.all([
+        getProducts({ search: searchQuery }),
+        getEmployees({ search: searchQuery })
+      ]);
+      const prods = (prodRes.data || []).map(p => ({
+        ...p,
+        isService: false,
+        displayTitle: p.title,
+        displayImage: p.images && p.images.length > 0 ? p.images[0] : "",
+        displayLink: `/listing/${p.id}`
+      }));
+      const emps = (empRes.data || []).map(emp => ({
+        ...emp,
+        isService: true,
+        displayTitle: emp.title || emp.category,
+        displayImage: emp.images && emp.images.length > 0 ? emp.images[0] : "",
+        displayLink: `/professionals/${emp.id}`
+      }));
+      setSearchResults([...prods, ...emps]);
+    } catch (err) {
+      alert("Error searching: " + err.message);
+    } finally {
+      setIsSearching(false);
+    }
+  }
+
+  function handleSelectResult(item) {
+    setCurrentPopup({
+      ...currentPopup,
+      title: item.displayTitle || "",
+      body: item.description || item.bio || item.displayTitle || "",
+      image_url: item.displayImage || "",
+      link_url: item.displayLink || "",
+      button_text: "View " + (item.isService ? "Service" : "Listing")
+    });
+    setSearchResults([]);
+    setSearchQuery("");
+  }
 
   const loadPopups = useCallback(async () => {
     setLoading(true);
@@ -106,6 +155,40 @@ export default function AdminPopupsPanel() {
         <h3 className="admin-table-title" style={{ marginBottom: '1.5rem' }}>
           {currentPopup.id ? "Edit Campaign Popup" : "New Campaign Popup"}
         </h3>
+        
+        <div style={{ marginBottom: '2rem', padding: '1rem', background: 'var(--smoke)', borderRadius: '8px' }}>
+          <h4 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '14px', color: 'var(--ink)' }}>Autofill from existing listing</h4>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem' }}>
+            <input 
+              className="form-input" 
+              placeholder="Search products or services..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button type="submit" className="admin-row-action" style={{ background: 'var(--accent)', color: '#fff' }} disabled={isSearching}>
+              {isSearching ? "Searching..." : "Search"}
+            </button>
+          </form>
+          {searchResults.length > 0 && (
+            <div style={{ marginTop: '1rem', background: '#fff', border: '1px solid #e0e5f2', borderRadius: '4px', maxHeight: '200px', overflowY: 'auto' }}>
+              {searchResults.map(res => (
+                <div 
+                  key={res.id} 
+                  onClick={() => handleSelectResult(res)}
+                  style={{ padding: '8px 12px', borderBottom: '1px solid #e0e5f2', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+                >
+                  {res.displayImage && <img src={res.displayImage} alt="" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />}
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{res.displayTitle}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{res.isService ? "Service" : "Product"}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <form onSubmit={handleSave}>
           <div className="form-group" style={{ marginBottom: '1rem' }}>
             <label className="form-label">Title</label>
