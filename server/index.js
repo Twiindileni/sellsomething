@@ -1346,6 +1346,13 @@ app.post("/api/orders", async (req, res) => {
 
     if (error) throw error;
 
+    // Auto-hide the listing by marking it as sold
+    await supabase.from("products").update({
+      is_sold: true,
+      sold_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq("id", product_id);
+
     // 🔔 Notify seller: new order placed
     if (resolvedSellerId) {
       const db = getSupabaseAdmin() || supabase;
