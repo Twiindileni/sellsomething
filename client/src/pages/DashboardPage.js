@@ -152,8 +152,17 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { user, session, profile, signOut, refreshProfile, mergeProfile } = useAuth();
   const accessToken = session?.access_token;
-  
-  const [activeTab, setActiveTab] = useState("listings");
+
+  // Read ?tab= from URL so MobileNav deep links work (e.g. /dashboard?tab=orders)
+  const [searchParams] = React.useMemo(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return [sp];
+  }, []);
+  const tabFromUrl = searchParams.get("tab");
+  const validTabs = ["listings", "orders", "messages", "profile", "favorites"];
+  const [activeTab, setActiveTab] = useState(
+    validTabs.includes(tabFromUrl) ? tabFromUrl : "listings"
+  );
   
   // Tab 1: Listings state
   const [listings, setListings] = useState([]);

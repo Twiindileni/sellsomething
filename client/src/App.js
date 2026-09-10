@@ -24,7 +24,9 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import Footer from "./components/Footer";
 import CampaignPopupModal from "./components/CampaignPopupModal";
+import MobileNav from "./components/MobileNav";
 import "./App.css";
+import "./mobile-redesign.css";
 
 export default function App() {
   return (
@@ -82,6 +84,7 @@ export default function App() {
               </Routes>
             </main>
             <Footer />
+            <MobileNav />
           </div>
         </Router>
       </ProductProvider>

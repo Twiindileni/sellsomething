@@ -1,0 +1,256 @@
+/* ==========================================================================
+   Mobile Native-Feel Redesign
+   ========================================================================== */
+
+/* Hide the bottom navigation bar and mobile tools on desktop */
+.mobile-bottom-nav,
+.mobile-header-tools {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  /* 1. App Shell adjustments for bottom nav */
+  .app {
+    padding-bottom: calc(65px + env(safe-area-inset-bottom, 20px));
+  }
+
+  /* Hide footer completely on mobile (WebView/App feel) */
+  .site-footer {
+    display: none !important;
+  }
+
+  /* 2. Slim Mobile Header */
+  .navbar {
+    height: 60px;
+    padding: 0 1rem;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: var(--white);
+    border-bottom: 1px solid var(--border-light);
+  }
+  
+  /* Show mobile tools */
+  .mobile-header-tools {
+    display: flex !important;
+  }
+  
+  /* Hide the hamburger menu toggle, desktop nav tools, and user toolbar */
+  .menu-toggle,
+  .navbar-nav,
+  .nav-user-toolbar {
+    display: none !important;
+  }
+  
+  /* Make the logo slightly smaller for the slim header */
+  .brand-logo-text--nav {
+    font-size: 1.25rem !important;
+    color: var(--ink) !important;
+  }
+  .brand-logo-text span {
+    background: var(--accent) !important;
+    -webkit-text-fill-color: var(--accent) !important;
+  }
+  .brand-logo-mark--nav {
+    height: 1.8rem !important;
+  }
+  .brand-logo--lockup {
+    gap: 0.35rem !important;
+  }
+
+  /* 3. Bottom Navigation Bar */
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(65px + env(safe-area-inset-bottom, 20px));
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border-light);
+    z-index: 9999;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding-top: 8px;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .mob-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 1;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.7rem;
+    font-weight: 500;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mob-nav-item:active {
+    opacity: 0.7;
+  }
+
+  .mob-nav-item svg {
+    transition: transform 0.2s ease;
+  }
+
+  .mob-nav-active {
+    color: var(--accent);
+  }
+
+  .mob-nav-active svg {
+    stroke: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  /* Floating Action Button style for Sell */
+  .mob-nav-sell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 1;
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    transform: translateY(-16px);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mob-nav-sell svg {
+    background: var(--accent);
+    color: var(--white);
+    border-radius: 50%;
+    padding: 12px;
+    width: 52px;
+    height: 52px;
+    box-shadow: 0 4px 15px rgba(212, 80, 10, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 2px;
+  }
+
+  .mob-nav-sell:active svg {
+    transform: scale(0.95);
+    box-shadow: 0 2px 10px rgba(212, 80, 10, 0.4);
+  }
+
+  /* 4. Mobile Grid & Hero Optmizations */
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+  
+  .products-section {
+    padding: 1rem 1rem 3rem !important;
+  }
+  
+  .card-body {
+    padding: 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+  
+  .card-title {
+    font-size: 0.95rem !important;
+    line-height: 1.2;
+    -webkit-line-clamp: 1;
+  }
+  
+  .card-price {
+    font-size: 1.1rem !important;
+  }
+  
+  .card-desc {
+    display: none !important; /* Hide description on mobile to save space */
+  }
+
+  .hero {
+    padding: 5rem 1rem 2rem !important; /* Extra top padding for fixed header */
+    background: var(--smoke);
+  }
+  .hero::before {
+    display: none;
+  }
+  
+  .hero-title {
+    font-size: 1.75rem !important;
+    margin-bottom: 0.5rem !important;
+    color: var(--ink) !important;
+  }
+  
+  .hero-sub {
+    font-size: 0.95rem !important;
+    margin-bottom: 1.5rem !important;
+    color: var(--muted) !important;
+  }
+
+  .search-wrap {
+    padding: 0.25rem !important;
+    border-radius: 12px !important;
+  }
+  
+  .search-input {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.95rem !important;
+  }
+  
+  .search-btn {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+    border-radius: 8px !important;
+  }
+
+  .categories-section {
+    padding: 1rem 1rem 0 !important;
+  }
+  
+  .category-strip {
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-bottom: 10px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  .category-strip::-webkit-scrollbar {
+    display: none;
+  }
+  .cat-btn {
+    white-space: nowrap;
+    padding: 0.4rem 1rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Remove hover effects on mobile for a native feel */
+  .product-card:hover {
+    transform: none !important;
+    box-shadow: var(--shadow-glass) !important;
+    border-color: var(--border-light) !important;
+  }
+  
+  .product-card:active {
+    background-color: var(--smoke);
+    transform: scale(0.98) !important;
+  }
+
+  .like-btn:hover {
+    transform: none !important;
+  }
+}
