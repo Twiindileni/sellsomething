@@ -114,6 +114,10 @@ export default function AdminPopupsPanel() {
 
   async function handleSave(e) {
     e.preventDefault();
+    const pricePayload = {
+      was_price: currentPopup.was_price ? Number(currentPopup.was_price) : null,
+      new_price: currentPopup.new_price ? Number(currentPopup.new_price) : null,
+    };
     try {
       if (currentPopup.id) {
         const { error } = await supabase
@@ -124,7 +128,8 @@ export default function AdminPopupsPanel() {
             image_url: currentPopup.image_url,
             link_url: currentPopup.link_url,
             button_text: currentPopup.button_text,
-            is_active: currentPopup.is_active
+            is_active: currentPopup.is_active,
+            ...pricePayload
           })
           .eq("id", currentPopup.id);
         if (error) throw error;
@@ -137,7 +142,8 @@ export default function AdminPopupsPanel() {
             image_url: currentPopup.image_url,
             link_url: currentPopup.link_url,
             button_text: currentPopup.button_text,
-            is_active: currentPopup.is_active
+            is_active: currentPopup.is_active,
+            ...pricePayload
           }]);
         if (error) throw error;
       }
@@ -227,7 +233,7 @@ export default function AdminPopupsPanel() {
               onChange={e => setCurrentPopup({...currentPopup, link_url: e.target.value})}
             />
           </div>
-          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+          <div className="form-group" style={{ marginBottom: '1rem' }}>
             <label className="form-label">Button Text (if link provided)</label>
             <input 
               className="form-input"
@@ -235,6 +241,32 @@ export default function AdminPopupsPanel() {
               placeholder="e.g. Learn More"
               onChange={e => setCurrentPopup({...currentPopup, button_text: e.target.value})}
             />
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="form-label">Was Price (N$) — optional</label>
+              <input
+                className="form-input"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g. 500.00"
+                value={currentPopup.was_price || ""}
+                onChange={e => setCurrentPopup({...currentPopup, was_price: e.target.value})}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="form-label">New Price (N$) — optional</label>
+              <input
+                className="form-input"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g. 350.00"
+                value={currentPopup.new_price || ""}
+                onChange={e => setCurrentPopup({...currentPopup, new_price: e.target.value})}
+              />
+            </div>
           </div>
           <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <input

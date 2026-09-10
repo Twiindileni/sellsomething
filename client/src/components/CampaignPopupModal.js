@@ -108,6 +108,39 @@ export default function CampaignPopupModal() {
             {campaign.body}
           </p>
 
+          {(campaign.was_price || campaign.new_price) && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: '1rem', margin: '0.5rem 0 1.25rem', flexWrap: 'wrap'
+            }}>
+              {campaign.was_price && (
+                <span style={{
+                  fontSize: '1.1rem', color: '#999',
+                  textDecoration: 'line-through', fontWeight: 500
+                }}>
+                  N$ {Number(campaign.was_price).toLocaleString('en-NA', { minimumFractionDigits: 2 })}
+                </span>
+              )}
+              {campaign.new_price && (
+                <span style={{
+                  fontSize: '1.6rem', color: 'var(--accent)',
+                  fontWeight: 800, letterSpacing: '-0.5px'
+                }}>
+                  N$ {Number(campaign.new_price).toLocaleString('en-NA', { minimumFractionDigits: 2 })}
+                </span>
+              )}
+              {campaign.was_price && campaign.new_price && (
+                <span style={{
+                  background: '#ef4444', color: '#fff',
+                  borderRadius: '20px', padding: '2px 10px',
+                  fontSize: '0.8rem', fontWeight: 700
+                }}>
+                  {Math.round((1 - campaign.new_price / campaign.was_price) * 100)}% OFF
+                </span>
+              )}
+            </div>
+          )}
+
           {campaign.link_url && (
             <button
               onClick={handleButtonClick}
