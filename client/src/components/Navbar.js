@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import BrandLogo from "./BrandLogo";
 import { User, Menu, X, Settings, Search, Bell } from "lucide-react";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -46,9 +47,11 @@ export default function Navbar() {
 
         {/* Slim mobile header icons (visible only on mobile) */}
         <div className="mobile-header-tools" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button className="mob-icon-btn" onClick={() => navigate("/")} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>
-            <Search size={22} strokeWidth={2} />
-          </button>
+          {location.pathname !== '/' && (
+            <button className="mob-icon-btn" onClick={() => navigate("/")} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>
+              <Search size={22} strokeWidth={2} />
+            </button>
+          )}
           {user && (
             <button className="mob-icon-btn" onClick={() => navigate("/dashboard?tab=messages")} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>
               <Bell size={22} strokeWidth={2} />
