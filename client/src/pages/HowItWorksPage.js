@@ -6,8 +6,8 @@ import { COMPANY } from "../config/site";
 import { PAYMENT } from "../config/payment";
 
 const BUYER_STEPS = [
-  { n: "1", title: "Find what you want", text: "Browse listings or services. Message the seller in-app to ask questions." },
-  { n: "2", title: "Buy Now with escrow", text: "Click Buy Now and pay the full amount to Sell Something — not the seller directly." },
+  { n: "1", title: "Find what you want", text: "Browse listings or services. Message the seller in app to ask questions." },
+  { n: "2", title: "Buy Now with escrow", text: "Click Buy Now and pay the full amount to Sell Something not the seller directly." },
   { n: "3", title: "Track your order", text: "Follow live delivery updates in My Dashboard. The seller shares ETA and progress." },
   { n: "4", title: "Confirm & rate", text: "When your item arrives, confirm receipt and leave an honest rating. Only then is payment released." },
   { n: "5", title: "Dispute if needed", text: "If delivery is late or the item isn't as described, request a refund from your order page." },
@@ -15,7 +15,7 @@ const BUYER_STEPS = [
 
 const SELLER_STEPS = [
   { n: "1", title: "Post your ad", text: `List your item for ${COMPANY.adFee}. Add clear photos and an honest description.` },
-  { n: "2", title: "Chat in-app", text: "Answer buyer questions through Sell Something messages — keep everything on-platform." },
+  { n: "2", title: "Chat in app", text: "Answer buyer questions through Sell Something messages keep everything on-platform." },
   { n: "3", title: "Dispatch & update", text: "Once payment is confirmed in escrow, deliver the item and keep the buyer updated on ETA." },
   { n: "4", title: "Get paid", text: "After the buyer confirms receipt, admin releases your payout (typically within 24 hours)." },
 ];
@@ -81,7 +81,7 @@ export default function HowItWorksPage() {
         <p className="info-prose">Only pay through these channels when using Buy Now:</p>
         <ul className="info-checklist">
           <li>Mobile ({PAYMENT.mobileMethods.join(", ")}): <strong>{PAYMENT.cellNumber}</strong></li>
-          <li>Bank: <strong>{PAYMENT.bank}</strong> — {PAYMENT.bankName}{PAYMENT.bankAccount ? ` · Acc ${PAYMENT.bankAccount}` : ""}</li>
+          <li>Bank: <strong>{PAYMENT.bank}</strong> {PAYMENT.bankName}{PAYMENT.bankAccount ? ` · Acc ${PAYMENT.bankAccount}` : ""}</li>
         </ul>
         <p className="info-prose warn">
           <AlertTriangle size={18} strokeWidth={2} className="banner-icon" aria-hidden="true" />

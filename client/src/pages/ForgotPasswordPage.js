@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
       {sent ? (
         <div className="sell-form-container">
           <SuccessBanner style={{ marginBottom: "1.5rem" }}>
-            Check your inbox — we sent a password reset link to <strong>{email}</strong>.
+            Check your inbox we sent a password reset link to <strong>{email}</strong>.
           </SuccessBanner>
           <p style={{ textAlign: "center", color: "var(--muted)", fontSize: "0.9rem", lineHeight: 1.6 }}>
             Click <strong>Reset my password</strong> in the email. You&apos;ll be taken to the website to choose a new password.

@@ -44,7 +44,7 @@ export const markProductSold = (id, sold, token) =>
   api.put(`/products/${id}/sold`, { sold }, authHeaders(token));
 export const deleteProduct = (id) => api.delete(`/products/${id}`);
 
-// ── Image upload (via server — avoids browser storage hangs) ────────────────
+// ── Image upload (via server avoids browser storage hangs) ────────────────
 const uploadHeaders = (accessToken) => ({
   Authorization: `Bearer ${accessToken}`,
   "Content-Type": "multipart/form-data",

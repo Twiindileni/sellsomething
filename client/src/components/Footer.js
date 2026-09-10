@@ -13,7 +13,7 @@ export default function Footer() {
         <div className="site-footer-brand">
           <BrandLogo variant="footer" link />
           <p className="site-footer-tagline">
-            Namibia&apos;s trusted marketplace — buy and sell with escrow protection.
+            Namibia&apos;s trusted marketplace buy and sell with escrow protection.
           </p>
           <p className="site-footer-legal">
             Operated by <strong>{COMPANY.legalName}</strong>
@@ -47,7 +47,7 @@ export default function Footer() {
         <span>© {year} {COMPANY.legalName}. All rights reserved.</span>
         <span className="site-footer-trust-badge">
           <Lock size={14} strokeWidth={2} aria-hidden="true" />
-          Escrow-protected payments
+          Escrow protected payments
         </span>
       </div>
     </footer>

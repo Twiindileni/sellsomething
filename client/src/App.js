@@ -22,6 +22,7 @@ import HowItWorksPage from "./pages/HowItWorksPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import Footer from "./components/Footer";
+import CampaignPopupModal from "./components/CampaignPopupModal";
 import "./App.css";
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
         <Router>
           <div className="app">
             <Navbar />
+            <CampaignPopupModal />
             <main className="main-content">
               <Routes>
                 <Route path="/" element={<Home />} />

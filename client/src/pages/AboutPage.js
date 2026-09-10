@@ -8,7 +8,7 @@ const VALUES = [
   {
     icon: MapPin,
     title: "Built for Namibia",
-    text: "A local marketplace connecting buyers and sellers across the country — from Windhoek to every town.",
+    text: "A local marketplace connecting buyers and sellers across the country from Windhoek to every town.",
   },
   {
     icon: Lock,
@@ -23,7 +23,7 @@ const VALUES = [
   {
     icon: CheckCircle2,
     title: "Accountable business",
-    text: "We operate as a registered Close Corporation — not an anonymous website.",
+    text: "We operate as a registered Close Corporation not an anonymous website.",
   },
 ];
 
@@ -31,7 +31,7 @@ export default function AboutPage() {
   return (
     <InfoPageLayout
       title="About Sell Something"
-      subtitle="A Namibian marketplace you can trust — operated by a registered local business."
+      subtitle="A Namibian marketplace you can trust operated by a registered local business."
     >
       <section className="info-section">
         <div className="about-hero-card">
@@ -65,7 +65,7 @@ export default function AboutPage() {
         <p className="info-prose">
           <strong>{COMPANY.brand}</strong> makes buying and selling in Namibia safer and simpler.
           Whether you&apos;re clearing out your garage, finding a great deal, or hiring a trusted
-          professional, we give you the tools — and the protection — to transact with confidence.
+          professional, we give you the tools and the protection to transact with confidence.
         </p>
         <p className="info-prose">
           Unlike informal classifieds where payments go straight to strangers, our{" "}

@@ -86,10 +86,10 @@ export function getBuyerTrackingSteps(order) {
     },
     {
       id: "delivered",
-      label: order.status === "delivered" ? "Handed Over — Your Turn" : "Awaiting Handover",
+      label: order.status === "delivered" ? "Handed Over Your Turn" : "Awaiting Handover",
       sub:
         order.status === "delivered"
-          ? "Seller says item is with you — only you can confirm receipt"
+          ? "Seller says item is with you only you can confirm receipt"
           : "Seller will mark when they've sent or handed over the item",
       time: order.delivered_at || (order.status === "delivered" ? order.updated_at : null),
       icon: <Package size={22} strokeWidth={2} />,
@@ -127,7 +127,7 @@ export function getSellerTrackingSteps(order) {
     {
       id: "placed",
       label: "Order Received",
-      sub: `Buyer: ${order.buyer_email || "—"}`,
+      sub: `Buyer: ${order.buyer_email || ""}`,
       time: order.created_at,
       icon: <ClipboardList size={22} strokeWidth={2} />,
     },
@@ -137,7 +137,7 @@ export function getSellerTrackingSteps(order) {
       sub:
         order.status === "pending_payment"
           ? "Waiting for admin to verify buyer payment"
-          : "Buyer payment confirmed — funds held safely",
+          : "Buyer payment confirmed funds held safely",
       time: order.payment_received_at || (current > 1 ? order.updated_at : null),
       icon: <CreditCard size={22} strokeWidth={2} />,
     },
@@ -167,7 +167,7 @@ export function getSellerTrackingSteps(order) {
       id: "received",
       label: "Buyer Confirmed & Rated",
       sub: order.buyer_rating
-        ? `Buyer rated ${order.buyer_rating}/5 — payout processing`
+        ? `Buyer rated ${order.buyer_rating}/5 payout processing`
         : "You get paid only after buyer confirms",
       time: order.buyer_confirmed_at || order.rated_at,
       icon: <CheckCircle2 size={22} strokeWidth={2} />,

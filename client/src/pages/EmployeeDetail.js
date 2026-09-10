@@ -368,11 +368,11 @@ export default function EmployeeDetail() {
                 <div className="review-form-group">
                   <label className="review-form-label">Rating</label>
                   <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="review-form-input">
-                    <option value="5">5 - Excellent</option>
-                    <option value="4">4 - Good</option>
-                    <option value="3">3 - Average</option>
-                    <option value="2">2 - Poor</option>
-                    <option value="1">1 - Terrible</option>
+                    <option value="5">5 Excellent</option>
+                    <option value="4">4 Good</option>
+                    <option value="3">3 Average</option>
+                    <option value="2">2 Poor</option>
+                    <option value="1">1 Terrible</option>
                   </select>
                 </div>
                 <div className="review-form-group">

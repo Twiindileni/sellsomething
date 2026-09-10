@@ -1,4 +1,4 @@
-export const TERMS_TEXT = `SELL SOMETHING — TERMS & CONDITIONS
+export const TERMS_TEXT = `SELL SOMETHING TERMS & CONDITIONS
 Last updated: June 2026
 
 Welcome to Sell Something, Namibia's online marketplace operated by Sheka Investment CC (BIPA CC/2024/01546). By creating an account or posting an ad, you agree to these terms. Please read them carefully.
@@ -27,14 +27,14 @@ e) Admin will review disputes and make a fair decision. All decisions are final.
 - List only items you own and have the right to sell.
 - Provide accurate descriptions and photos.
 - Deliver items promptly after payment is confirmed (in escrow).
-- Communicate with buyers only through Sell Something in-app messages.
+- Communicate with buyers only through Sell Something in app messages.
 - Do NOT share phone numbers, WhatsApp, or other off-platform contact details to bypass the app.
-- Do NOT ask buyers to pay outside the platform — this voids buyer protection and may result in account suspension.
+- Do NOT ask buyers to pay outside the platform this voids buyer protection and may result in account suspension.
 
 6. BUYER RESPONSIBILITIES
-- Contact sellers through in-app messages only — do not arrange off-platform deals.
+- Contact sellers through in app messages only do not arrange off-platform deals.
 - Make payments only through the official Sell Something payment channel (Buy Now / escrow).
-- Confirm delivery honestly — false confirmation to release funds is fraud.
+- Confirm delivery honestly false confirmation to release funds is fraud.
 - Raise disputes within 7 days of the expected delivery date.
 
 7. PROHIBITED ITEMS
@@ -49,14 +49,14 @@ Sell Something is not liable for any loss arising from transactions between user
 10. CONTACT
 For any questions or disputes, contact us at admin@sellsomething.online or via the Help & Support page on this website.`;
 
-export const PRIVACY_TEXT = `SELL SOMETHING — PRIVACY POLICY
+export const PRIVACY_TEXT = `SELL SOMETHING PRIVACY POLICY
 Last updated: June 2026
 
 Sheka Investment CC (trading as Sell Something, BIPA CC/2024/01546) respects your privacy. This policy explains what information we collect and how we use it.
 
 1. INFORMATION WE COLLECT
 - Account details: name, email address, and profile information you provide when signing up.
-- Listings & messages: ads you post, photos you upload, and in-app messages between buyers and sellers.
+- Listings & messages: ads you post, photos you upload, and in app messages between buyers and sellers.
 - Order data: purchase history, delivery details, and escrow payment status for Buy Now orders.
 - Technical data: browser type, device information, and general usage logs to keep the platform secure.
 
@@ -73,10 +73,10 @@ We do not sell your personal data. We may share information only when:
 - You give explicit consent.
 
 4. DATA SECURITY
-We use industry-standard security practices including encrypted connections (HTTPS) and secure authentication through Supabase. No system is 100% secure — please use a strong, unique password.
+We use industry-standard security practices including encrypted connections (HTTPS) and secure authentication through Supabase. No system is 100% secure please use a strong, unique password.
 
 5. YOUR RIGHTS
-You may request access to or correction of your personal information by contacting admin@sellsomething.online. You may delete your account by contacting us — some order records may be retained as required by law.
+You may request access to or correction of your personal information by contacting admin@sellsomething.online. You may delete your account by contacting us some order records may be retained as required by law.
 
 6. COOKIES & LOCAL STORAGE
 We use browser storage to keep you signed in and remember message read status. You can clear this in your browser settings.

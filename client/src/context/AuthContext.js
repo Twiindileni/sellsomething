@@ -61,7 +61,7 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // Load profile outside the auth listener — calling supabase.from() inside
+  // Load profile outside the auth listener calling supabase.from() inside
   // onAuthStateChange can re-trigger auth events and cause a refresh loop.
   useEffect(() => {
     const userId = user?.id;

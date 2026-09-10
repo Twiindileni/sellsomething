@@ -13,6 +13,7 @@ import {
   User,
   Bell,
   RotateCcw,
+  LayoutTemplate
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -31,6 +32,7 @@ import StarRating from "../components/StarRating";
 import VerifiedBadge from "../components/VerifiedBadge";
 import AdminMailPanel from "../components/AdminMailPanel";
 import AdminNotificationPanel from "../components/AdminNotificationPanel";
+import AdminPopupsPanel from "../components/AdminPopupsPanel";
 import "./AdminDashboard.css";
 import { VERIFICATION_REJECTION_REASONS } from "../config/verificationRejectionReasons";
 
@@ -96,13 +98,13 @@ const STATUS_LABELS = {
   completed: { label: "Completed", color: "#2E7D52", bg: "rgba(46,125,82,0.12)" },
 };
 
-// Actions only the admin performs — sellers/buyers handle delivery & confirmation
+// Actions only the admin performs sellers/buyers handle delivery & confirmation
 const ADMIN_ACTIONS = {
   pending_payment: [{ label: "Confirm Payment Received", next: "payment_received" }],
   confirmed: [{ label: "Release Payment to Seller", next: "completed" }],
   disputed: [
     { label: "Approve Refund", next: "refunded" },
-    { label: "Resolve Dispute — Handed Over (buyer still confirms)", next: "delivered" },
+    { label: "Resolve Dispute Handed Over (buyer still confirms)", next: "delivered" },
   ],
 };
 
@@ -128,12 +130,12 @@ function formatPrice(p) {
 }
 
 function formatDate(d) {
-  if (!d) return "—";
+  if (!d) return "";
   return new Date(d).toLocaleDateString("en-NA", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function formatDateTime(d) {
-  if (!d) return "—";
+  if (!d) return "";
   return new Date(d).toLocaleString("en-NA", {
     day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
   });
@@ -453,8 +455,8 @@ export default function AdminPage() {
           {order.shipping_location && <div style={{ fontSize: 12, color: '#a3aed1' }}>{order.shipping_location}</div>}
         </td>
         <td>
-          <div style={{ fontSize: 13, fontWeight: 600 }}>B: {order.buyer_email || "-"}</div>
-          <div style={{ fontSize: 13, color: '#a3aed1' }}>S: {order.seller_email || "-"}</div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>B: {order.buyer_email || ""}</div>
+          <div style={{ fontSize: 13, color: '#a3aed1' }}>S: {order.seller_email || ""}</div>
         </td>
         <td>{formatDate(order.created_at)}</td>
         <td style={{ fontWeight: 800 }}>{formatPrice(order.amount)}</td>
@@ -501,7 +503,7 @@ export default function AdminPage() {
             </div>
           </div>
         </td>
-        <td>{u.phone || "-"}</td>
+        <td>{u.phone || ""}</td>
         <td>{formatDate(u.created_at)}</td>
         <td>
           {u.is_verified_seller ? (
@@ -587,6 +589,9 @@ export default function AdminPage() {
           <button className={`admin-nav-item ${view === "notifications" ? "active" : ""}`} onClick={() => setView("notifications")}>
             <Bell size={20} /> Push Notifications
           </button>
+          <button className={`admin-nav-item ${view === "popups" ? "active" : ""}`} onClick={() => setView("popups")}>
+            <LayoutTemplate size={20} /> Popups
+          </button>
         </nav>
       </aside>
 
@@ -604,6 +609,9 @@ export default function AdminPage() {
         <button className={`admin-mobile-nav-item ${view === "mail" ? "active" : ""}`} onClick={() => setView("mail")}>
           <Mail size={22} /> Mail
         </button>
+        <button className={`admin-mobile-nav-item ${view === "popups" ? "active" : ""}`} onClick={() => setView("popups")}>
+          <LayoutTemplate size={22} /> Popups
+        </button>
       </nav>
 
       {/* ── MAIN CONTENT ── */}
@@ -615,6 +623,7 @@ export default function AdminPage() {
             {view === "boosts" && "Boost Campaigns"}
             {view === "mail" && "Email Center"}
             {view === "notifications" && "Push Notifications"}
+            {view === "popups" && "Campaign Popups"}
           </h1>
           <div className="admin-topbar-actions">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 10 }}>
@@ -855,7 +864,7 @@ export default function AdminPage() {
                         <div>
                           <div style={{ fontWeight: 600, color: 'var(--charcoal)' }}>{p.title}</div>
                           <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-                            {p.category} · {p.location || "—"} · posted {formatDate(p.created_at)}
+                            {p.category} · {p.location || ""} · posted {formatDate(p.created_at)}
                           </div>
                         </div>
                         <div style={{ fontWeight: 700, color: 'var(--charcoal)' }}>{formatPrice(p.price)}</div>
@@ -984,12 +993,15 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ════════ PUSH VIEW ════════ */}
+        {/* ════════ NOTIFICATIONS VIEW ════════ */}
         {view === "notifications" && (
           <div className="admin-table-panel" style={{ background: 'transparent', boxShadow: 'none' }}>
             <AdminNotificationPanel accessToken={accessToken} />
           </div>
         )}
+
+        {/* ════════ POPUPS VIEW ════════ */}
+        {view === "popups" && <AdminPopupsPanel />}
 
       </main>
     </div>

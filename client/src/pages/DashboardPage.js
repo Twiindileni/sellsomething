@@ -85,7 +85,7 @@ function VerificationPendingView({ profile, justSubmitted, confirmationEmail }) 
 
       <div className="profile-verification-pending-next">
         <Mail size={16} strokeWidth={2} aria-hidden="true" />
-        <span>No further action needed — we'll email you if we need anything else.</span>
+        <span>No further action needed we'll email you if we need anything else.</span>
       </div>
 
       <VerificationSocialSummary profile={profile} />
@@ -307,7 +307,7 @@ export default function DashboardPage() {
         onClick={() => openBoostModal(targetType, target)}
       >
         <Star size={14} strokeWidth={2} className="inline-icon" aria-hidden="true" />
-        Boost — pin to top
+        Boost pin to top
       </button>
     );
   }
@@ -678,19 +678,19 @@ export default function DashboardPage() {
             {isVerifiedSeller && (
               <p className="dashboard-verification-banner dashboard-verification-banner--verified">
                 <BadgeCheck size={16} strokeWidth={2} aria-hidden="true" />
-                You are a verified seller — buyers see your badge on your listings.
+                You are a verified seller buyers see your badge on your listings.
               </p>
             )}
             {verificationPending && (
               <p className="dashboard-verification-banner dashboard-verification-banner--pending">
                 <Clock size={16} strokeWidth={2} aria-hidden="true" />
-                Verification pending — our team is reviewing your submission.
+                Verification pending our team is reviewing your submission.
               </p>
             )}
             {verificationRejected && (
               <p className="dashboard-verification-banner dashboard-verification-banner--rejected">
                 <AlertTriangle size={16} strokeWidth={2} aria-hidden="true" />
-                Verification declined — you can reapply in Profile Settings.
+                Verification declined you can reapply in Profile Settings.
               </p>
             )}
             <p className="dashboard-email">{user?.email}</p>
@@ -718,7 +718,7 @@ export default function DashboardPage() {
 
       {globalError && <ErrorBanner>{globalError}</ErrorBanner>}
 
-      {/* Tabs — 3-column card grid */}
+      {/* Tabs 3-column card grid */}
       <div className="dashboard-tabs">
         <button
           type="button"
@@ -825,7 +825,7 @@ export default function DashboardPage() {
             My Sales
           </h2>
           <p style={{ color: "var(--muted)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
-            Manage deliveries on the live tracker — the buyer sees your updates in real time.
+            Manage deliveries on the live tracker the buyer sees your updates in real time.
           </p>
           {salesLoading ? (
             <div className="loading-wrap"><div className="spinner" /> Loading sales…</div>
@@ -850,7 +850,7 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* Listings Tab — compact overview (no full card grids) */}
+      {/* Listings Tab compact overview (no full card grids) */}
       {activeTab === "listings" && (
         <section className="dashboard-section dashboard-listings-panel">
           {listingsLoading ? (
@@ -1039,7 +1039,7 @@ export default function DashboardPage() {
                         </a>
                       ) : (
                         <a href={`/listing/${activeThread.product.id}`} className="chat-header-listing">
-                          {activeThread.product.title} - N$ {Number(activeThread.product.price).toLocaleString()}
+                          {activeThread.product.title} N$ {Number(activeThread.product.price).toLocaleString()}
                         </a>
                       )}
                     </div>
@@ -1213,7 +1213,7 @@ export default function DashboardPage() {
                   <p className="profile-verification-hint">
                     {verificationRejected
                       ? "Submit a new verification request with updated details."
-                      : "Get a trusted badge on your ads. We review your social profiles and ID by email — your ID is not stored on our servers."}
+                      : "Get a trusted badge on your ads. We review your social profiles and ID by email your ID is not stored on our servers."}
                   </p>
                   {!verificationRejected && (
                   <p className="profile-verification-hint profile-verification-hint--step">

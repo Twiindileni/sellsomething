@@ -83,7 +83,7 @@ export default function BoostModal({ target, targetType, accessToken, onClose, o
                 <span className="buynow-step-num">2</span>
                 <div>
                   <strong>Pay the boost fee</strong>
-                  <p>Same payment channels as Buy Now — Pay to Cell, EasyWallet, Blue Wallet, or FNB.</p>
+                  <p>Same payment channels as Buy Now Pay to Cell, EasyWallet, Blue Wallet, or FNB.</p>
                 </div>
               </div>
               <div className="buynow-step-item">
@@ -108,7 +108,7 @@ export default function BoostModal({ target, targetType, accessToken, onClose, o
               ))}
             </div>
             <button type="button" className="buynow-primary-btn" onClick={() => setStep(2)}>
-              Continue — Pay {formatPrice(plan.fee)} →
+              Continue Pay {formatPrice(plan.fee)} →
             </button>
           </>
         )}
@@ -181,7 +181,7 @@ export default function BoostModal({ target, targetType, accessToken, onClose, o
                 id="boost-ref"
                 type="text"
                 className="form-input"
-                placeholder={`e.g. Boost - ${title}`}
+                placeholder={`e.g. Boost ${title}`}
                 value={payRef}
                 onChange={(e) => setPayRef(e.target.value)}
               />
@@ -199,7 +199,7 @@ export default function BoostModal({ target, targetType, accessToken, onClose, o
                 {submitting ? "Submitting…" : (
                   <>
                     <CheckCircle2 size={18} strokeWidth={2} className="inline-icon" aria-hidden="true" />
-                    I Have Paid — Request Boost
+                    I Have Paid Request Boost
                   </>
                 )}
               </button>

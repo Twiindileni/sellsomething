@@ -133,7 +133,7 @@ export default function BuyerOrderTracking({ order, accessToken, onOrderUpdated 
           </div>
           <div className="tracking-label-row">
             <span className="tracking-label-key">SELLER</span>
-            <span className="tracking-label-val">{order.seller_email || "—"}</span>
+            <span className="tracking-label-val">{order.seller_email || ""}</span>
           </div>
           {order.shipping_location ? (
             <div className="tracking-label-row tracking-label-row--ship">
@@ -201,7 +201,7 @@ export default function BuyerOrderTracking({ order, accessToken, onOrderUpdated 
                   {daysLeft === 0 ? "Due today" : `${daysLeft} day${daysLeft !== 1 ? "s" : ""} remaining`}
                 </span>
               )}
-              {etaMissed && <span className="tracking-eta-sub tracking-eta-sub--missed">Deadline missed — refund available</span>}
+              {etaMissed && <span className="tracking-eta-sub tracking-eta-sub--missed">Deadline missed refund available</span>}
             </div>
           )}
 
@@ -225,7 +225,7 @@ export default function BuyerOrderTracking({ order, accessToken, onOrderUpdated 
                 Only you can confirm receipt. The seller cannot confirm for you. Check the item before confirming.
               </div>
               <button type="button" className="order-confirm-btn tracking-confirm-cta" onClick={() => setShowConfirm(true)}>
-                I Received It — Confirm &amp; Rate
+                I Received It Confirm &amp; Rate
               </button>
             </>
           )}
@@ -262,7 +262,7 @@ export default function BuyerOrderTracking({ order, accessToken, onOrderUpdated 
                   disabled={!confirmChecked || submitting}
                   onClick={handleConfirmReceived}
                 >
-                  {submitting ? "Submitting…" : "Submit — Well Received"}
+                  {submitting ? "Submitting…" : "Submit Well Received"}
                 </button>
                 <button type="button" className="cat-btn" onClick={() => setShowConfirm(false)} disabled={submitting}>
                   Cancel
@@ -279,7 +279,7 @@ export default function BuyerOrderTracking({ order, accessToken, onOrderUpdated 
                   className={`order-dispute-btn ${etaMissed ? "order-dispute-urgent" : ""}`}
                   onClick={() => setShowDispute(true)}
                 >
-                  {etaMissed ? "Request Refund — Deadline Missed" : "Report Problem / Request Refund"}
+                  {etaMissed ? "Request Refund Deadline Missed" : "Report Problem / Request Refund"}
                 </button>
               ) : (
                 <div className="dispute-form">

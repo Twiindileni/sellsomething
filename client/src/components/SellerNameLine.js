@@ -10,7 +10,7 @@ export function sellerDisplayName(product) {
   );
 }
 
-/** Seller name with optional verified badge — use on cards and listing detail */
+/** Seller name with optional verified badge use on cards and listing detail */
 export default function SellerNameLine({ product, badgeSize = 13, className = "" }) {
   const name = sellerDisplayName(product);
   if (!name) return null;

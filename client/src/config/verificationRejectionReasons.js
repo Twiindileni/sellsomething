@@ -1,4 +1,4 @@
-/** Preset decline reasons — keep in sync with server/verificationReasons.js */
+/** Preset decline reasons keep in sync with server/verificationReasons.js */
 export const VERIFICATION_REJECTION_REASONS = [
   { id: "id_not_clear", label: "ID image is not clear or readable" },
   { id: "id_looks_fake", label: "ID looks altered or not genuine" },

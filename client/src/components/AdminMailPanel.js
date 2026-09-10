@@ -203,7 +203,7 @@ export default function AdminMailPanel({ accessToken }) {
           )}
           Resend {status?.resendConfigured ? "connected" : "not configured"}
         </div>
-        <span className="admin-mail-meta">From: {status?.fromEmail || "—"}</span>
+        <span className="admin-mail-meta">From: {status?.fromEmail || ""}</span>
         <span className="admin-mail-meta">Cooldown: {status?.cooldownDays || 30} days per user</span>
         <span className="admin-mail-meta">Cron: 1st of month, 09:00 Namibia time</span>
         <button type="button" className="admin-refresh-btn" onClick={load} disabled={loading}>
@@ -273,7 +273,7 @@ export default function AdminMailPanel({ accessToken }) {
                 value={composeUserId}
                 onChange={(e) => handleComposeUserChange(e.target.value)}
               >
-                <option value="">— Select user —</option>
+                <option value=""> Select user </option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.full_name ? `${u.full_name} (${u.email})` : u.email}
@@ -306,7 +306,7 @@ export default function AdminMailPanel({ accessToken }) {
               value={composeTemplate}
               onChange={(e) => handleComposeTemplateChange(e.target.value)}
             >
-              <option value="">— Custom message —</option>
+              <option value=""> Custom message </option>
               {ADMIN_MAIL_TEMPLATES.map((tpl) => (
                 <option key={tpl.id} value={tpl.id}>{tpl.label}</option>
               ))}

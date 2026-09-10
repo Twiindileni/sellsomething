@@ -221,7 +221,7 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
           <div className="tracking-label-row tracking-label-row--ship">
             <span className="tracking-label-key">DELIVER TO</span>
             <span className="tracking-label-val tracking-label-val--address">
-              {order.shipping_location || "—"}
+              {order.shipping_location || ""}
             </span>
           </div>
           {!order.shipping_location && !isFinished && (
@@ -229,7 +229,7 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
           )}
           <div className="tracking-label-row">
             <span className="tracking-label-key">BUYER</span>
-            <span className="tracking-label-val">{order.buyer_email || "—"}</span>
+            <span className="tracking-label-val">{order.buyer_email || ""}</span>
           </div>
           <div className="tracking-label-row">
             <span className="tracking-label-key">ITEM</span>
@@ -293,12 +293,12 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
               <strong>{formatEta(order.delivery_eta)}</strong>
               {!etaMissed && daysLeft !== null && daysLeft >= 0 && (
                 <span className="tracking-eta-sub">
-                  {daysLeft === 0 ? "Due today — deliver or update ETA" : `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`}
+                  {daysLeft === 0 ? "Due today deliver or update ETA" : `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`}
                 </span>
               )}
               {etaMissed && (
                 <span className="tracking-eta-sub tracking-eta-sub--missed">
-                  Deadline missed — buyer can request a refund
+                  Deadline missed buyer can request a refund
                 </span>
               )}
             </div>
@@ -316,11 +316,11 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
             </div>
           )}
 
-          {/* Seller actions — updates sync to buyer tracker */}
+          {/* Seller actions updates sync to buyer tracker */}
           {order.status === "payment_received" && mode !== "start" && mode !== "progress" && mode !== "payout" && (
             <div className="seller-action-row">
               <button type="button" className="order-confirm-btn" onClick={openStartDelivery}>
-                Start Delivery — Set ETA
+                Start Delivery Set ETA
               </button>
               <button
                 type="button"
@@ -519,7 +519,7 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
             <div className="tracking-confirm-panel seller-action-panel">
               <h4 className="tracking-confirm-title">Update delivery ETA</h4>
               <p className="tracking-confirm-sub">Buyer is notified on their tracker when you save a new date.</p>
-              <label className="form-label" htmlFor={`seller-update-eta-${order.id}`}>New deliver-by date</label>
+              <label className="form-label" htmlFor={`seller-update-eta-${order.id}`}>New deliver by date</label>
               <input
                 id={`seller-update-eta-${order.id}`}
                 type="datetime-local"
@@ -533,7 +533,7 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
                 id={`seller-update-note-${order.id}`}
                 type="text"
                 className="form-input"
-                placeholder="e.g. Courier delayed — new agreed date"
+                placeholder="e.g. Courier delayed new agreed date"
                 value={deliveryEtaNote}
                 onChange={(e) => setDeliveryEtaNote(e.target.value)}
               />
@@ -548,7 +548,7 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
 
           {order.status === "delivered" && (
             <div className="order-pending-note seller-status-note">
-              Handed over — waiting for the <strong>buyer</strong> to confirm receipt and rate. You cannot confirm for them.
+              Handed over waiting for the <strong>buyer</strong> to confirm receipt and rate. You cannot confirm for them.
             </div>
           )}
 
@@ -568,7 +568,7 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
 
           {listingMarkedSold && (
             <div className="order-pending-note seller-status-note seller-status-note--success">
-              Listing marked as sold — hidden from browse. Relist anytime from My Ads &amp; Services.
+              Listing marked as sold hidden from browse. Relist anytime from My Ads &amp; Services.
             </div>
           )}
 
@@ -580,7 +580,7 @@ export default function SellerOrderTracking({ order, accessToken, onOrderUpdated
 
           {order.status === "completed" && (
             <div className="order-pending-note seller-status-note seller-status-note--success">
-              Order complete — you have been paid.
+              Order complete you have been paid.
             </div>
           )}
 

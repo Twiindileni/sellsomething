@@ -21,7 +21,7 @@ export const COMPANY = {
   adFee: "N$25",
 };
 
-/** Paid boost plans — seller pays, admin approves, listing pins to top */
+/** Paid boost plans seller pays, admin approves, listing pins to top */
 export const BOOST_PLANS = [
   { days: 7, fee: 50, label: "7 days" },
   { days: 14, fee: 90, label: "14 days" },

@@ -57,7 +57,7 @@ export default function SignupPage() {
         // Redirect happens in useEffect once AuthContext receives the session
       } else {
         setSuccess(
-          "Account created! Check your email and click Confirm my email — you'll be signed in and taken to the site."
+          "Account created! Check your email and click Confirm my email you'll be signed in and taken to the site."
         );
       }
     } catch (err) {

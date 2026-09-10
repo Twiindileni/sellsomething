@@ -7,7 +7,7 @@ export const ADMIN_MAIL_TEMPLATES = [
     subject: "Sell Something is now on Android!",
     message: `We're thrilled to announce that the Sell Something app is officially live on Android!
 
-Experience a faster, smoother way to buy and sell across Namibia. Enjoy full-screen image galleries, instant push notifications for buyer/seller chats, and our secure escrow system—right from your pocket.
+Experience a faster, smoother way to buy and sell across Namibia. Enjoy full-screen image galleries, instant push notifications for buyer/seller chats, and our secure escrow systemright from your pocket.
 
 Download it today and let us know what you think!`,
   },
@@ -15,7 +15,7 @@ Download it today and let us know what you think!`,
     id: "welcome",
     label: "Welcome to Sell Something",
     subject: "Welcome to Sell Something",
-    message: `Thanks for joining Sell Something — Namibia's marketplace with escrow protection.
+    message: `Thanks for joining Sell Something Namibia's marketplace with escrow protection.
 
 You can browse listings, message sellers, and post your own ads for N$25. If you have any questions, reply to this email or visit your dashboard on the site.
 
@@ -33,7 +33,7 @@ If anything looks wrong, reply to this email and we'll help.`,
   },
   {
     id: "seller_dispatch",
-    label: "Seller — please dispatch order",
+    label: "Seller please dispatch order",
     subject: "Action needed: dispatch your order",
     message: `A buyer has paid for an item you're selling on Sell Something.
 
@@ -43,7 +43,7 @@ If you've already handed over the item, mark it as delivered there.`,
   },
   {
     id: "buyer_confirm",
-    label: "Buyer — confirm receipt",
+    label: "Buyer confirm receipt",
     subject: "Please confirm you received your item",
     message: `Your order on Sell Something shows as delivered.
 
@@ -57,7 +57,7 @@ If there's a problem, use the refund option on the order page or reply here.`,
     subject: "Is your listing still available?",
     message: `We noticed one of your ads may be out of date on Sell Something.
 
-If the item sold, please mark it sold or remove the listing. If it's still available, consider refreshing the photos or price — updated ads get more interest from buyers across Namibia.
+If the item sold, please mark it sold or remove the listing. If it's still available, consider refreshing the photos or price updated ads get more interest from buyers across Namibia.
 
 You can manage your ads from Dashboard → My Ads & Services.`,
   },
@@ -83,7 +83,7 @@ Reply if you'd like help choosing a plan.`,
   },
   {
     id: "support",
-    label: "Support — we're on it",
+    label: "Support we're on it",
     subject: "Re: your Sell Something enquiry",
     message: `Thanks for getting in touch with Sell Something.
 
@@ -105,7 +105,7 @@ Thank you for using Sell Something.`,
     id: "payout",
     label: "Seller payout sent",
     subject: "Your seller payout has been released",
-    message: `Good news — the buyer confirmed receipt and we've released your payout for this order on Sell Something.
+    message: `Good news the buyer confirmed receipt and we've released your payout for this order on Sell Something.
 
 Payment should arrive per your agreed method. Check Dashboard → My Sales for order details.
 

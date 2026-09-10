@@ -1,4 +1,4 @@
-// Payment details for escrow purchases — set via .env (see client/.env.example)
+// Payment details for escrow purchases set via .env (see client/.env.example)
 const cellNumber =
   process.env.REACT_APP_PAYMENT_CELL
   || process.env.REACT_APP_PAYMENT_EASYWALLET
@@ -23,12 +23,12 @@ export const SELLER_PAYOUT_METHODS = [
 ];
 
 export function sellerPayoutMethodLabel(id) {
-  return SELLER_PAYOUT_METHODS.find((m) => m.id === id)?.label || id || "—";
+  return SELLER_PAYOUT_METHODS.find((m) => m.id === id)?.label || id || "";
 }
 
 export function sellerPayoutDetailsPlaceholder(method) {
   if (method === "bank_eft") {
-    return "Account name, bank & number — e.g. John Doe, FNB 62262406674";
+    return "Account name, bank & number e.g. John Doe, FNB 62262406674";
   }
-  return "Mobile number — e.g. +264 81 123 4567";
+  return "Mobile number e.g. +264 81 123 4567";
 }

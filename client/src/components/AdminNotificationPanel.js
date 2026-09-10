@@ -97,7 +97,7 @@ export default function AdminNotificationPanel({ accessToken }) {
           Send Notification
         </h3>
         <p className="admin-mail-hint">
-          Send push notifications directly to users' phones, or display in-app alerts.
+          Send push notifications directly to users' phones, or display in app alerts.
         </p>
 
         <form className="admin-mail-compose" onSubmit={handleSend}>
@@ -125,7 +125,7 @@ export default function AdminNotificationPanel({ accessToken }) {
                 onChange={(e) => setUserId(e.target.value)}
                 disabled={loadingUsers}
               >
-                <option value="">— Select user —</option>
+                <option value=""> Select user </option>
                 {users.map(u => (
                   <option key={u.id} value={u.id}>
                     {u.full_name ? `${u.full_name} (${u.email})` : u.email}
@@ -142,7 +142,7 @@ export default function AdminNotificationPanel({ accessToken }) {
               value={templateId}
               onChange={handleTemplateChange}
             >
-              <option value="">— Custom Message —</option>
+              <option value=""> Custom Message </option>
               {ADMIN_PUSH_TEMPLATES.map(tpl => (
                 <option key={tpl.id} value={tpl.id}>{tpl.label}</option>
               ))}

@@ -86,7 +86,7 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
       <div className="buynow-modal" onClick={(e) => e.stopPropagation()}>
         <button className="buynow-close" onClick={onClose} aria-label="Close">×</button>
 
-        {/* Step 1 — Escrow explanation */}
+        {/* Step 1 Escrow explanation */}
         {step === 1 && (
           <>
             <div className="buynow-header">
@@ -131,25 +131,25 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
                 <span className="buynow-step-num">4</span>
                 <div>
                   <strong>You confirm you are happy</strong>
-                  <p>Only after you confirm receipt and satisfaction does the seller get paid. No confirmation — no payout.</p>
+                  <p>Only after you confirm receipt and satisfaction does the seller get paid. No confirmation no payout.</p>
                 </div>
               </div>
               <div className="buynow-step-item">
                 <span className="buynow-step-num refund">↩</span>
                 <div>
                   <strong>Not happy? Get a refund</strong>
-                  <p>If the item is wrong, damaged, or not delivered within {REFUND_WINDOW_DAYS} days — raise a dispute for a full refund.</p>
+                  <p>If the item is wrong, damaged, or not delivered within {REFUND_WINDOW_DAYS} days raise a dispute for a full refund.</p>
                 </div>
               </div>
             </div>
 
             <button className="buynow-primary-btn" onClick={() => setStep(2)}>
-              Continue — View Payment Details →
+              Continue View Payment Details →
             </button>
           </>
         )}
 
-        {/* Step 2 — Payment instructions */}
+        {/* Step 2 Payment instructions */}
         {step === 2 && (
           <>
             <div className="buynow-header">
@@ -254,7 +254,7 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
                 id="pay-ref"
                 type="text"
                 className="form-input"
-                placeholder="e.g. John Shilongo - iPhone 13"
+                placeholder="e.g. John Shilongo iPhone 13"
                 value={payRef}
                 onChange={(e) => setPayRef(e.target.value)}
               />
@@ -273,7 +273,7 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
                 {submitting ? "Placing order…" : (
                   <>
                     <CheckCircle2 size={18} strokeWidth={2} className="inline-icon" aria-hidden="true" />
-                    I Have Paid — Place My Order
+                    I Have Paid Place My Order
                   </>
                 )}
               </button>
@@ -281,7 +281,7 @@ export default function BuyNowModal({ product, sellerId, onClose }) {
           </>
         )}
 
-        {/* Step 3 — Confirmation */}
+        {/* Step 3 Confirmation */}
         {step === 3 && (
           <div style={{ textAlign: "center", padding: "1rem 0" }}>
             <div className="icon-block">

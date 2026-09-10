@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 
 /**
- * Branded login gate — replaces browser alert() for messaging, reviews, etc.
+ * Branded login gate replaces browser alert() for messaging, reviews, etc.
  */
 export default function LoginPromptModal({
   onClose,
@@ -55,8 +55,8 @@ export default function LoginPromptModal({
         <p className="login-prompt-message">{message}</p>
 
         <ul className="login-prompt-benefits">
-          <li>Safe in-app messaging</li>
-          <li>Escrow-protected purchases</li>
+          <li>Safe in app messaging</li>
+          <li>Escrow protected purchases</li>
           <li>Free to join</li>
         </ul>
 

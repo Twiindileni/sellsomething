@@ -1,6 +1,6 @@
 import { registerPushToken, unregisterPushToken } from "./api";
 
-/** Detect platform lazily — bridge is injected after page load in Android. */
+/** Detect platform lazily bridge is injected after page load in Android. */
 function detectPlatform() {
   if (typeof window === "undefined") return null;
   if (window.SellSomethingPush) return "android";
@@ -25,7 +25,7 @@ function readAndroidToken() {
 export function getNativePushToken() {
   const platform = detectPlatform();
   if (platform === "android") return readAndroidToken();
-  // iOS / web — token is injected into window by the native shell
+  // iOS / web token is injected into window by the native shell
   return window.__SELLSOMETHING_FCM_TOKEN__ || null;
 }
 
@@ -44,7 +44,7 @@ export function schedulePushRegistration(accessToken) {
   const attempt = async (triesLeft) => {
     const platform = detectPlatform();
     if (!platform) {
-      // Not running in the native app — nothing to register
+      // Not running in the native app nothing to register
       return;
     }
 

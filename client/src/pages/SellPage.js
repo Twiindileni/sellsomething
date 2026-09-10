@@ -347,7 +347,7 @@ export default function SellPage() {
             Terms &amp; Conditions
           </button>
           {isService
-            ? ", including the in-app messaging policy."
+            ? ", including the in app messaging policy."
             : ", including the escrow payment policy that protects both buyers and sellers."}
         </span>
       </label>
@@ -503,7 +503,7 @@ export default function SellPage() {
               disabled={submitting}
             />
             <span className="register-help-text" style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
-              Buyers will reach you via in-app messages on this listing.
+              Buyers will reach you via in app messages on this listing.
             </span>
           </div>
 
@@ -584,7 +584,7 @@ export default function SellPage() {
           </div>
 
           <p className="register-help-text" style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: "1.5rem" }}>
-            Clients will find your profile under <strong>Find Services</strong> and contact you via in-app messages.
+            Clients will find your profile under <strong>Find Services</strong> and contact you via in app messages.
           </p>
 
           {agreementsBlock}

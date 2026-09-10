@@ -12,7 +12,7 @@ const FAQ = [
   },
   {
     q: "How does escrow protect me as a buyer?",
-    a: "When you Buy Now, your payment goes to Sell Something first — not directly to the seller. We hold the money until you confirm you received the item. If something goes wrong, you can request a refund.",
+    a: "When you Buy Now, your payment goes to Sell Something first not directly to the seller. We hold the money until you confirm you received the item. If something goes wrong, you can request a refund.",
   },
   {
     q: "Why must I pay through the app?",
@@ -24,7 +24,7 @@ const FAQ = [
   },
   {
     q: "How do I contact a seller?",
-    a: "Use the Message button on any listing or service profile. Keep all communication in-app so we have a record if a dispute arises.",
+    a: "Use the Message button on any listing or service profile. Keep all communication in app so we have a record if a dispute arises.",
   },
   {
     q: "What if my item never arrives?",
@@ -119,7 +119,7 @@ export default function HelpSupportPage() {
       <section className="info-section">
         <h2>Stay safe</h2>
         <ul className="info-checklist">
-          <li>Never pay a seller directly — use <strong>Buy Now</strong> escrow only.</li>
+          <li>Never pay a seller directly use <strong>Buy Now</strong> escrow only.</li>
           <li>Keep all messages inside the app.</li>
           <li>Meet in public places for local pickups when possible.</li>
           <li>Report suspicious listings or users via {COMPANY.supportEmail}.</li>
