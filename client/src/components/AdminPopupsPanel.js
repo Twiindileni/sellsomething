@@ -222,8 +222,8 @@ export default function AdminPopupsPanel() {
             <label className="form-label">Link URL (optional)</label>
             <input 
               className="form-input"
-              type="url"
               value={currentPopup.link_url}
+              placeholder="e.g. /listing/123 or https://..."
               onChange={e => setCurrentPopup({...currentPopup, link_url: e.target.value})}
             />
           </div>
@@ -235,6 +235,18 @@ export default function AdminPopupsPanel() {
               placeholder="e.g. Learn More"
               onChange={e => setCurrentPopup({...currentPopup, button_text: e.target.value})}
             />
+          </div>
+          <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <input
+              type="checkbox"
+              id="is_active_check"
+              checked={!!currentPopup.is_active}
+              onChange={e => setCurrentPopup({...currentPopup, is_active: e.target.checked})}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <label htmlFor="is_active_check" style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--ink)' }}>
+              Show this popup to users immediately (Active)
+            </label>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button type="submit" className="admin-row-action" style={{ background: 'var(--accent)', color: '#fff' }}>
