@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getEmployees } from "../services/api";
 import EmployeeCard from "../components/EmployeeCard";
+import SkeletonCard from "../components/SkeletonCard";
 import { useAuth } from "../context/AuthContext";
 import SEO from "../components/SEO";
 import "./EmployeeDirectory.css";
@@ -80,9 +81,10 @@ export default function EmployeeDirectory() {
         </div>
 
         {loading ? (
-          <div className="loading-wrap">
-            <div className="spinner" />
-            Loading professionals...
+          <div className="products-grid">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : employees.length === 0 ? (
           <div className="empty-state">

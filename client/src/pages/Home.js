@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { SearchX } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
 import ProductCard from "../components/ProductCard";
+import SkeletonCard from "../components/SkeletonCard";
 import SEO from "../components/SEO";
 
 export default function Home() {
@@ -79,9 +80,10 @@ export default function Home() {
         </div>
 
         {loading && (
-          <div className="loading-wrap">
-            <div className="spinner" />
-            Loading listings…
+          <div className="products-grid">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         )}
 

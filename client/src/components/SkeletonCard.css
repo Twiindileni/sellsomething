@@ -1,0 +1,66 @@
+.skeleton-card {
+  pointer-events: none;
+}
+
+.skeleton-card .skeleton-img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: var(--smoke);
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-card .skeleton-cat {
+  width: 30%;
+  height: 12px;
+  background: var(--smoke);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-card .skeleton-title {
+  width: 80%;
+  height: 16px;
+  background: var(--smoke);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-card .skeleton-seller {
+  width: 50%;
+  height: 14px;
+  background: var(--smoke);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-card .skeleton-price {
+  width: 40%;
+  height: 20px;
+  background: var(--smoke);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-card .skeleton-location {
+  width: 25%;
+  height: 12px;
+  background: var(--smoke);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+    background: #e2e8f0; /* slightly darker than var(--smoke) for contrast */
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
