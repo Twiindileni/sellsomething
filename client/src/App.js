@@ -1,4 +1,5 @@
 import React from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "./context/AuthContext";
@@ -87,6 +88,7 @@ export default function App() {
             <MobileNav />
           </div>
         </Router>
+        <Analytics />
       </ProductProvider>
     </AuthProvider>
     </HelmetProvider>
