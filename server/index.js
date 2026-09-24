@@ -612,6 +612,8 @@ app.get("/api/categories", (req, res) => {
     "Clothing",
     "Property",
     "Agriculture",
+    "Rental",
+    "Plot",
     "Services",
     "Other",
   ]);
@@ -2652,4 +2654,5 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 module.exports = app;
+
 

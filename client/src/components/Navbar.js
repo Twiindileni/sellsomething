@@ -78,6 +78,14 @@ export default function Navbar() {
             Find Services
           </NavLink>
 
+          <NavLink to="/rentals" className="nav-link" onClick={closeMenu}>
+            Rentals
+          </NavLink>
+
+          <NavLink to="/plots" className="nav-link" onClick={closeMenu}>
+            Plots
+          </NavLink>
+
           <NavLink to="/help" className="nav-link" onClick={closeMenu}>
             Help
           </NavLink>

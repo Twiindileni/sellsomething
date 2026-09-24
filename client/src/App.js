@@ -26,6 +26,8 @@ import PrivacyPage from "./pages/PrivacyPage";
 import Footer from "./components/Footer";
 import CampaignPopupModal from "./components/CampaignPopupModal";
 import MobileNav from "./components/MobileNav";
+import RentalPage from "./pages/RentalPage";
+import PlotPage from "./pages/PlotPage";
 import "./App.css";
 import "./mobile-redesign.css";
 
@@ -42,6 +44,8 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/listing/:id" element={<ListingDetail />} />
+                <Route path="/rentals" element={<RentalPage />} />
+                <Route path="/plots" element={<PlotPage />} />
                 <Route
                   path="/sell"
                   element={

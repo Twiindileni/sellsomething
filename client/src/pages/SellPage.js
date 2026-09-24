@@ -10,7 +10,7 @@ import {
 } from "../services/api";
 import { MAX_PRODUCT_IMAGES } from "../utils/productImages";
 import TermsModal from "../components/TermsModal";
-import { Camera, Package, Wrench, CheckCircle2, AlertTriangle, Coins } from "lucide-react";
+import { Camera, Package, Wrench, CheckCircle2, AlertTriangle, Coins, Home, Map } from "lucide-react";
 
 const AD_FEE = 25;
 
@@ -31,9 +31,13 @@ export default function SellPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, session, profile } = useAuth();
-  const [listingType, setListingType] = useState(
-    searchParams.get("type") === "service" ? "service" : "item"
-  );
+  const [listingType, setListingType] = useState(() => {
+    const t = searchParams.get("type");
+    if (t === "service") return "service";
+    if (t === "rental") return "rental";
+    if (t === "plot") return "plot";
+    return "item";
+  });
   const [categories, setCategories] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -263,6 +267,9 @@ export default function SellPage() {
   const priceNum = parseFloat(form.price) || 0;
   const totalWithFee = priceNum + AD_FEE;
   const isService = listingType === "service";
+  const isRental = listingType === "rental";
+  const isPlot = listingType === "plot";
+  const isItem = listingType === "item";
 
   const photosBlock = (
     <div className="form-group">
@@ -374,6 +381,10 @@ export default function SellPage() {
         <p className="sell-sub">
           {isService
             ? "List your professional service so clients can find and contact you."
+            : isRental
+            ? "List your property or item available to rent."
+            : isPlot
+            ? "List your land or plot for sale."
             : "Fill in the details below to list your item for sale."}
         </p>
       </div>
@@ -381,7 +392,7 @@ export default function SellPage() {
       <div className="sell-type-tabs">
         <button
           type="button"
-          className={`sell-type-tab ${!isService ? "active" : ""}`}
+          className={`sell-type-tab ${isItem ? "active" : ""}`}
           onClick={() => { setListingType("item"); setError(null); }}
         >
           <Package size={18} strokeWidth={2} style={{ marginRight: '6px', position: 'relative', top: '2px' }} /> Sell an Item
@@ -393,12 +404,26 @@ export default function SellPage() {
         >
           <Wrench size={18} strokeWidth={2} style={{ marginRight: '6px', position: 'relative', top: '2px' }} /> Offer a Service
         </button>
+        <button
+          type="button"
+          className={`sell-type-tab ${isRental ? "active" : ""}`}
+          onClick={() => { setListingType("rental"); setError(null); }}
+        >
+          <Home size={18} strokeWidth={2} style={{ marginRight: '6px', position: 'relative', top: '2px' }} /> List a Rental
+        </button>
+        <button
+          type="button"
+          className={`sell-type-tab ${isPlot ? "active" : ""}`}
+          onClick={() => { setListingType("plot"); setError(null); }}
+        >
+          <Map size={18} strokeWidth={2} style={{ marginRight: '6px', position: 'relative', top: '2px' }} /> Sell a Plot
+        </button>
       </div>
 
       {success && <div className="success-banner"><CheckCircle2 size={18} strokeWidth={2.5} style={{ marginRight: '6px', position: 'relative', top: '3px' }} /> {successMsg}</div>}
       {error && <div className="error-banner"><AlertTriangle size={18} strokeWidth={2.5} style={{ marginRight: '6px', position: 'relative', top: '3px' }} /> {error}</div>}
 
-      {!isService ? (
+      {isItem ? (
         <form onSubmit={handleSubmitItem}>
           {photosBlock}
 
@@ -593,7 +618,120 @@ export default function SellPage() {
             {submitting ? "Publishing…" : "Publish Service Profile →"}
           </button>
         </form>
-      )}
+      ) : isRental ? (
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          setError(null); setSuccess(false); setSuccessMsg("");
+          if (!form.title || !form.price || !form.seller || !form.seller_email) { setError("Please fill in all required fields."); return; }
+          if (!validateAgreements()) return;
+          setSubmitting(true);
+          uploadImages().then((urls) => {
+            return createProduct({
+              title: form.title.trim(), description: form.description.trim(),
+              price: parseFloat(form.price), category: "Rental",
+              location: form.location, seller: form.seller.trim(),
+              seller_email: form.seller_email.trim(), images: urls, image: urls[0] || null, fee_acknowledged: true,
+            }, session.access_token);
+          }).then((res) => {
+            const id = res.data?.id;
+            setSuccess(true); setSuccessMsg("Rental listed! Redirecting…");
+            setTimeout(() => navigate(`/listing/${id}`), 1200);
+          }).catch((err) => setError(err.response?.data?.error || err.message || "Failed to post rental."))
+            .finally(() => setSubmitting(false));
+        }}>
+          {photosBlock}
+          <div className="form-group">
+            <label className="form-label">Property / Item Title *</label>
+            <input className="form-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. 2-bedroom apartment in Windhoek North" maxLength={100} disabled={submitting} />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Monthly Rent (N$) *</label>
+              <div className="price-wrap">
+                <span className="price-prefix">N$</span>
+                <input className="form-input" name="price" value={form.price} onChange={handleChange} type="number" min="0" step="0.01" placeholder="0.00" disabled={submitting} />
+              </div>
+              <span style={{ fontSize: "0.8rem", color: "var(--muted)", marginTop: "4px", display: "block" }}>Per month</span>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Location</label>
+              <select className="form-select" name="location" value={form.location} onChange={handleChange} disabled={submitting}>
+                <option value="">Select…</option>
+                {["Windhoek","Walvis Bay","Swakopmund","Oshakati","Rundu","Katima Mulilo","Keetmanshoop","Lüderitz","Otjiwarongo","Grootfontein","Gobabis","Rehoboth","Mariental","Other"].map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <textarea className="form-textarea" name="description" value={form.description} onChange={handleChange} placeholder="Number of bedrooms, bathrooms, parking, included utilities, pet policy, etc." maxLength={1000} disabled={submitting} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Your Name *</label>
+            <input className="form-input" name="seller" value={form.seller} onChange={handleChange} placeholder="Full name or business name" disabled={submitting} />
+            <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>Tenants will contact you via in-app messages.</span>
+          </div>
+          {agreementsBlock}
+          <button type="submit" className="submit-btn" disabled={submitting || !feeAccepted || !termsAccepted}>
+            {submitting ? "Posting…" : "List My Rental →"}
+          </button>
+        </form>
+      ) : isPlot ? (
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          setError(null); setSuccess(false); setSuccessMsg("");
+          if (!form.title || !form.price || !form.seller || !form.seller_email) { setError("Please fill in all required fields."); return; }
+          if (!validateAgreements()) return;
+          setSubmitting(true);
+          uploadImages().then((urls) => {
+            return createProduct({
+              title: form.title.trim(), description: form.description.trim(),
+              price: parseFloat(form.price), category: "Plot",
+              location: form.location, seller: form.seller.trim(),
+              seller_email: form.seller_email.trim(), images: urls, image: urls[0] || null, fee_acknowledged: true,
+            }, session.access_token);
+          }).then((res) => {
+            const id = res.data?.id;
+            setSuccess(true); setSuccessMsg("Plot listed! Redirecting…");
+            setTimeout(() => navigate(`/listing/${id}`), 1200);
+          }).catch((err) => setError(err.response?.data?.error || err.message || "Failed to post plot."))
+            .finally(() => setSubmitting(false));
+        }}>
+          {photosBlock}
+          <div className="form-group">
+            <label className="form-label">Plot / Land Title *</label>
+            <input className="form-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. 600m² residential plot in Oshakati" maxLength={100} disabled={submitting} />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Asking Price (N$) *</label>
+              <div className="price-wrap">
+                <span className="price-prefix">N$</span>
+                <input className="form-input" name="price" value={form.price} onChange={handleChange} type="number" min="0" step="0.01" placeholder="0.00" disabled={submitting} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Location</label>
+              <select className="form-select" name="location" value={form.location} onChange={handleChange} disabled={submitting}>
+                <option value="">Select…</option>
+                {["Windhoek","Walvis Bay","Swakopmund","Oshakati","Rundu","Katima Mulilo","Keetmanshoop","Lüderitz","Otjiwarongo","Grootfontein","Gobabis","Rehoboth","Mariental","Other"].map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <textarea className="form-textarea" name="description" value={form.description} onChange={handleChange} placeholder="Size (m²), zoning (residential/commercial/agricultural), title deed status, services available (water, electricity), etc." maxLength={1000} disabled={submitting} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Your Name *</label>
+            <input className="form-input" name="seller" value={form.seller} onChange={handleChange} placeholder="Full name or business name" disabled={submitting} />
+            <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>Buyers will contact you via in-app messages.</span>
+          </div>
+          {agreementsBlock}
+          <button type="submit" className="submit-btn" disabled={submitting || !feeAccepted || !termsAccepted}>
+            {submitting ? "Posting…" : "List My Plot →"}
+          </button>
+        </form>
+      ) : null}
     </div>
   );
 }
