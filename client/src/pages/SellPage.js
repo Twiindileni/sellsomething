@@ -538,7 +538,7 @@ export default function SellPage() {
             {submitting ? "Posting…" : "Post My Ad →"}
           </button>
         </form>
-      ) : (
+      ) : isService ? (
         <form onSubmit={handleSubmitService}>
           {photosBlock}
 
