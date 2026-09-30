@@ -195,14 +195,6 @@ export default function RentalPage() {
           )}
         </div>
 
-        {/* CTA banner */}
-        <div className="prop-cta-banner">
-          <h2>Have a property to rent out?</h2>
-          <p>List your rental for free and reach thousands of potential tenants across Namibia</p>
-          <Link to="/sell?type=rental" className="prop-cta-btn">
-            <PlusCircle size={18} /> List Your Rental
-          </Link>
-        </div>
       </div>
     </>
   );
