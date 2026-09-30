@@ -10,10 +10,17 @@
 
 /* Hide desktop nav elements ONLY in native app */
 .is-native-app .site-footer,
-.is-native-app .menu-toggle,
-.is-native-app .navbar-nav,
 .is-native-app .nav-user-toolbar {
   display: none !important;
+}
+
+.is-native-app .menu-toggle,
+.is-native-app .nav-link {
+  color: var(--charcoal);
+}
+
+.is-native-app .navbar-nav {
+  border-top: 1px solid var(--border-light) !important;
 }
 
 @media (max-width: 768px) {
@@ -24,7 +31,7 @@
 
   /* 2. Slim Mobile Header */
   .is-native-app .navbar {
-    height: 60px;
+    min-height: 60px;
     padding: 0 1rem;
     position: fixed;
     top: 0;
