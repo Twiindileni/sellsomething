@@ -1,4 +1,4 @@
-const path = require("path");
+﻿const path = require("path");
 const dotenv = require("dotenv");
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
@@ -614,6 +614,7 @@ app.get("/api/categories", (req, res) => {
     "Agriculture",
     "Rental",
     "Plot",
+    "ItemRental",
     "Services",
     "Other",
   ]);

@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
@@ -27,6 +27,7 @@ import Footer from "./components/Footer";
 import CampaignPopupModal from "./components/CampaignPopupModal";
 import MobileNav from "./components/MobileNav";
 import RentalPage from "./pages/RentalPage";
+import ItemRentalPage from "./pages/ItemRentalPage";
 import PlotPage from "./pages/PlotPage";
 import "./App.css";
 import "./mobile-redesign.css";
@@ -45,6 +46,7 @@ export default function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/listing/:id" element={<ListingDetail />} />
                 <Route path="/rentals" element={<RentalPage />} />
+                <Route path="/item-rentals" element={<ItemRentalPage />} />
                 <Route path="/plots" element={<PlotPage />} />
                 <Route
                   path="/sell"

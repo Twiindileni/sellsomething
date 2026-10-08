@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import BrandLogo from "./BrandLogo";
@@ -78,6 +78,9 @@ export default function Navbar() {
             Find Services
           </NavLink>
 
+          <NavLink to="/item-rentals" className="nav-link" onClick={closeMenu}>
+            Item Rentals
+          </NavLink>
           <NavLink to="/rentals" className="nav-link" onClick={closeMenu}>
             Rentals
           </NavLink>
